@@ -12,6 +12,18 @@ except ImportError:
 
 #Auxiliary functions needed in estimate.py
 
+#Exctracted from the Lattice Estimator
+def UniformModStd(q):
+    a = -(q // 2)
+    b = -a -1 if q % 2 == 0 else -a
+
+    if b < a:
+        raise ValueError(f"upper limit must be larger than lower limit but got: {b} < {a}")
+    m = b - a + 1
+    mean = (a + b) / float(2)
+    stddev = math.sqrt((m**2 - 1) / float(12))
+
+    return stddev
 
 def load_all_from_csv(file_path):
     with open(file_path, newline='') as csvfile:

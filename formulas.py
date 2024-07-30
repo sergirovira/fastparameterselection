@@ -39,6 +39,7 @@ def predicted_beta_(params):
     sigma = params.Xe.stddev
     q = params.q
     zeta = params.Xe.stddev / params.Xs.stddev
+
     lnq = math.log(q)
 
     beta_approx1 = 2*n/lnq*(math.log(n/(lnq))) #very rough approximation
@@ -61,14 +62,10 @@ def predicted_beta_(params):
 
 # Eq. (14)
 # TODO: add arbitrary error distribution
-def model_lambda_usvp(d, logq, secret_dist, params):
-    sig = 3.19 
-
-    # Determine chi based on secret distribution
-    if secret_dist == 'binary':
-        chi = 2 * sig
-    else:
-        chi = np.sqrt(3 / 2) * sig
+def model_lambda_usvp(d, logq, std_s, std_e, params):
+    
+    sig = std_e
+    chi = std_e/std_s
 
     lnq = np.multiply(logq, ln2)
 
@@ -93,14 +90,10 @@ def model_lambda_usvp_s(d, logq, params):
 
 # Eq. (17)
 # TODO: add arbitrary error distribution
-def model_lambda_bdd(d, logq, secret_dist, params):
-    sig = 3.19 
-
-    if secret_dist == 'binary':
-        chi = 2 * sig
-    else:
-        chi = np.sqrt(3 / 2) * sig
-
+def model_lambda_bdd(d, logq, std_s, std_e, params):
+    sig = std_e 
+    chi = std_e/std_s
+    
     lnq = np.multiply(logq, ln2)
 
     beta = []
@@ -133,13 +126,10 @@ def model_n_usvp(l, logq, params):
     return np.multiply(np.divide(l + params[0] * np.log(lnq), params[1] * np.log(l) + params[2]) + params[3], lnq)
 
 # Eq. (22)
-# TODO: add arbitrary error distribution
-def model_n_bdd(l, logq, secret_dist, params):
-    sigma = 3.19
-    if secret_dist == 'binary':
-        chi = 2 * sigma
-    else:
-        chi = np.sqrt(3 / 2) * sigma
+def model_n_bdd(l, logq, std_s, std_e, params):
+    sigma = std_e
+
+    chi = std_e/std_s
 
     lnq = np.multiply(logq, ln2)
 
