@@ -23,6 +23,15 @@ except ImportError:
     print("Warning: Failed to import lattice_estimator, some options will not work")
     estimator_installed = 0
 
+def helper():
+    print('python3 estimate.py --param "lambda" --file "example_lambda_binary.csv"')
+    print('python3 estimate.py --param "lambda" --n "1024" --logq "20-30;35;40-60" --dist "binary"')
+    print('python3 estimate.py --param "n" --lambda "80" --logq "20-30" --dist "binary" --verify 1')
+    print('python3 estimate.py --param "n" --file "example_n_ternary.csv"')
+    print('python3 estimate.py --param "logq" --lambda "80" --n "1024" --dist "binary"')
+    print('python3 estimate.py --param "std_e" --lambda "80" --n "1024" --logq "20" --dist "binary"')
+    sys.exit()
+
 def main(argv):
     secret = "binary"
     param = None
@@ -40,24 +49,14 @@ def main(argv):
 
     try:
         opts, args = getopt.getopt(argv, "h", ["secret=", "error=", "param=", "n=", "lambda=", "logq=", "verify=", "file="])
-    except getopt.GetoptError:
-        print('python3 estimate.py --param "lambda" --file "example_lambda_binary.csv"')
-        print('python3 estimate.py --param "lambda" --n "1024" --logq "20-30;35;40-60" --dist "binary"')
-        print('python3 estimate.py --param "n" --lambda "80" --logq "20-30" --dist "binary" --verify 1')
-        print('python3 estimate.py --param "n" --file "example_n_ternary.csv"')
-        print('python3 estimate.py --param "logq" --lambda "80" --n "1024" --dist "binary"')
-        print('python3 estimate.py --param "std_e" --lambda "80" --n "1024" --logq "20" --dist "binary"')
-        sys.exit(2)
+    except:
+        helper()
+
+    if (len(opts) == 0): helper()
 
     for opt, arg in opts:
         if opt == '-h':
-            print('python3 estimate.py --param "lambda" --file "example_lambda_binary.csv"')
-            print('python3 estimate.py --param "lambda" --n "1024" --logq "20-30;35;40-60" --dist "binary"')
-            print('python3 estimate.py --param "n" --lambda "80" --logq "20-30" --dist "binary" --verify 1')
-            print('python3 estimate.py --param "n" --file "example_n_ternary.csv"')
-            print('python3 estimate.py --param "logq" --lambda "80" --n "1024" --dist "binary"')
-            print('python3 estimate.py --param "std_e" --lambda "80" --n "1024" --logq "20" --dist "binary"')
-            sys.exit()
+            helper()
         elif opt == '--secret':
             secret = arg
             if secret == 'binary': 
@@ -83,6 +82,8 @@ def main(argv):
             verify = int(arg)
         elif opt == '--file':
             file_path = arg
+        else:
+            helper()
 
     if secret == "binary":
         lambda_usvp = lambda_usvp_bin
@@ -155,7 +156,7 @@ def main(argv):
 
                 data.append(data_point)
 
-    if param == 'logq':
+    elif param == 'logq':
         
         if(verify):
             headers = ["Secret dist.", "lambda", "n", "logq usvp", "logq bdd", "lwe est"]
@@ -191,7 +192,7 @@ def main(argv):
 
                 data.append(data_point)
 
-    if param == 'std_e':
+    elif param == 'std_e':
         
         if(verify):
             headers = ["Secret dist.", "lambda", "n", "logq", "std_e bdd", "lwe est"]
@@ -244,7 +245,7 @@ def main(argv):
     # running the Lattice Estimator and substructing the output to 170. 
 
 
-    if param == 'lambda':
+    elif param == 'lambda':
 
         if(verify):
             headers = ["Secret dist.", "LWE dim.", "log q", "usvp (Eq. 14)", "diff", "usvp_s (Eq. 16)", "diff", "bdd (Eq. 17)", "diff", "bdd_s (Eq. 20)", "diff", "Estimator"]
@@ -291,6 +292,8 @@ def main(argv):
                     data_point = [secret, lwe_d, lq, est_usvp, est_usvp_s, est_bdd, est_bdd_s]
 
                 data.append(data_point)
+
+    else: helper()
 
     print_table(headers,data)
     
