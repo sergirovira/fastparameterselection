@@ -29,11 +29,7 @@ ln2 = 0.693147180559945
 
 # Auxiliary functions
 
-def predicted_beta_(params):
-
-    PI = 3.14159265358979
-    e = 2.71828182845905
-    const = 2*PI*e
+def predicted_beta_bdd(params):
 
     n = params.n
     sigma = params.Xe.stddev
@@ -58,10 +54,19 @@ def predicted_beta_(params):
     res = num/denom**2
     return res
 
+def predicted_beta_usvp(d, lnq, sig, chi):
+    x = np.divide(d, lnq)
+    f1 = np.divide(np.multiply(d, np.log(x)), np.multiply(const, lnq - np.log(sig)))
+    f2 = np.multiply(x, np.log(np.divide(d, lnq - np.log(sig))))
+
+    # Beta calculation
+    beta = np.divide(np.multiply(2 * d, np.multiply(lnq - np.log(chi), np.log(f1))), 
+                     np.power(lnq + 0.5 * np.log(f2) - np.log(const * sig), 2))
+    return beta
+
 # Main functions
 
 # Eq. (14)
-# TODO: add arbitrary error distribution
 def model_lambda_usvp(d, logq, std_s, std_e, params):
     
     sig = std_e
@@ -69,14 +74,8 @@ def model_lambda_usvp(d, logq, std_s, std_e, params):
 
     lnq = np.multiply(logq, ln2)
 
-    # Intermediate calculations
-    x = np.divide(d, lnq)
-    f1 = np.divide(np.multiply(d, np.log(x)), np.multiply(2 * PI * e, lnq - np.log(sig)))
-    f2 = np.multiply(x, np.log(np.divide(d, lnq - np.log(sig))))
+    beta = predicted_beta_usvp(d, lnq, sig, chi)
 
-    # Beta calculation
-    beta = np.divide(np.multiply(2 * d, np.multiply(lnq - np.log(chi), np.log(f1))), 
-                     np.power(lnq + 0.5 * np.log(f2) - np.log(const * sig), 2))
     m2 = np.multiply(2 * d, beta * np.divide(lnq - np.log(chi), np.log(np.divide(beta, const))))
 
     return np.multiply(params[0], beta) + np.multiply(params[1], np.log(m2)) + params[2]
@@ -89,8 +88,7 @@ def model_lambda_usvp_s(d, logq, params):
                        np.log(np.divide(params[1] * d, lnq))) + np.multiply(params[2], np.log(d)) + params[3]
 
 # Eq. (17)
-# TODO: add arbitrary error distribution
-def model_lambda_bdd(d, logq, std_s, std_e, params):
+def model_lambda_bdd(d, logq, std_s, std_e, std_s_num, params):
     sig = std_e 
     chi = std_e/std_s
     
@@ -100,11 +98,11 @@ def model_lambda_bdd(d, logq, std_s, std_e, params):
 
     if isinstance(logq, list):
         for lq in logq:
-            params_est = LWE.Parameters(d, 2 ** lq, ND.UniformMod(3), ND.DiscreteGaussian(3.19))
-            beta.append(predicted_beta_(params_est))
+            params_est = LWE.Parameters(d, 2 ** lq, ND.UniformMod(std_s_num), ND.DiscreteGaussian(std_e))
+            beta.append(predicted_beta_bdd(params_est))
     else:
-        params_est = LWE.Parameters(d, 2 ** logq, ND.UniformMod(3), ND.DiscreteGaussian(3.19))
-        beta.append(predicted_beta_(params_est))
+        params_est = LWE.Parameters(d, 2 ** logq, ND.UniformMod(std_s_num), ND.DiscreteGaussian(std_e))
+        beta.append(predicted_beta_bdd(params_est))
 
     # Intermediate calculations
     log_delta = np.log(beta) / (np.multiply(2, beta))

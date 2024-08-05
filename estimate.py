@@ -24,13 +24,50 @@ except ImportError:
     estimator_installed = 0
 
 def helper():
-    print('python3 estimate.py --param "lambda" --file "example_lambda_binary.csv"')
-    print('python3 estimate.py --param "lambda" --n "1024" --logq "20-30;35;40-60" --dist "binary"')
+    #print('python3 estimate.py --param "lambda" --file "example_lambda_binary.csv"')
+    print('python3 estimate.py --param "lambda" --n "1024" --logq "20-30;35;40-60" --secret "binary" --error "3.19"')
     print('python3 estimate.py --param "n" --lambda "80" --logq "20-30" --dist "binary" --verify 1')
     print('python3 estimate.py --param "n" --file "example_n_ternary.csv"')
     print('python3 estimate.py --param "logq" --lambda "80" --n "1024" --dist "binary"')
     print('python3 estimate.py --param "std_e" --lambda "80" --n "1024" --logq "20" --dist "binary"')
     sys.exit()
+
+paper = 'https://eprint.iacr.org/2024/1001'
+
+def create_explanation_dict(headers):
+    explanations = {
+        "Secret dist.": "The distribution of the secret (can be either binary or ternary)",
+        "lambda": "The security level",
+        "log q": "The size of the modulus q in bits",
+        "usvp_s (Eq. 21)": "The output of Eq. 21 of " + paper,
+        "lwe est": "The output of running the Lattice Estimator using the output of our formulas and the rest of the LWE parameters",
+        "usvp_s pow2": "Closest power of 2 to the output of Eq. 21",
+        "bdd_s (Eq. 22)": "The output of Eq. 22 of " + paper,
+        "bdd_s pow2": "Closest power of 2 to the output of Eq. 22"
+    }
+
+    # Create a dictionary using the headers and explanations
+    explanation_dict = {}
+    for header in headers:
+        # Add the explanation if it exists in the explanations dictionary, otherwise use a default message
+        explanation_dict[header] = explanations.get(header, "No explanation available for this header.")
+
+    return explanation_dict
+
+def helper_headers(header):
+    explanation_dict = create_explanation_dict(header)
+
+    max_length = max(len(header) for header in explanation_dict.keys())
+    max_length_exp = max(len(explanation) for explanation in explanation_dict.values())
+
+    # Print each header and its explanation with proper formatting
+    for header, explanation in explanation_dict.items():
+        print(f"{header:<{max_length}}: {explanation}")
+
+    print("." * max_length_exp)
+    print('\n')
+
+
 
 def main(argv):
     secret = "binary"
@@ -118,6 +155,8 @@ def main(argv):
             headers = ["Secret dist.", "lambda", "log q", "usvp_s (Eq. 21)", "lwe est", "usvp_s pow2", "lwe est", "bdd_s (Eq. 22)", "lwe est", "bdd_s pow2", "lwe est"]
         else:
             headers = ["Secret dist.", "lambda", "log q", "usvp_s (Eq. 21)", "usvp_s pow2", "usvp_s num", "bdd_s (Eq. 22)", "bdd_s pow2", "bdd_s num"]
+
+        helper_headers(headers)
 
         data = []
         if file_path:
@@ -264,7 +303,7 @@ def main(argv):
                 try: 
                     est_bdd = int(round(model_lambda_bdd(lwe_d, logq, secret, lambda_bdd_bin)[0].real))
                 except Exception as e:
-                    pass
+                    print(e)
                 est_bdd_s = int(round(model_lambda_bdd_s(lwe_d, logq, lambda_bdd_s_bin)))
                 if(verify and estimator_installed):
                     lwe_usvp, lwe_bdd, lwe_usvp_s, lwe_bdd_s = run_verification(logq,secret,lwe_d,lwe_d,lwe_d,lwe_d)
@@ -280,9 +319,9 @@ def main(argv):
                 est_usvp_s = int(round(model_lambda_usvp_s(lwe_d, lq, lambda_usvp_s)))
                 est_bdd = 0
                 try: 
-                    est_bdd = int(round(model_lambda_bdd(lwe_d, lq, std_s, std_e, lambda_bdd)[0].real))
+                    est_bdd = int(round(model_lambda_bdd(lwe_d, lq, std_s, std_e, secret_q, lambda_bdd)[0].real))
                 except Exception as e:
-                    pass
+                    print(e)
                 est_bdd_s = int(round(model_lambda_bdd_s(lwe_d, lq, lambda_bdd_s)))
 
                 if(verify and estimator_installed):
