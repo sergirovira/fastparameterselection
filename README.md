@@ -47,6 +47,22 @@ Please report bugs through the [GitHub issue tracker](https://github.com/sergiro
 Citing
 ------
 
-The paper will be presented at Africacrypt 2024, before the proceedings are published, a pre-print is available as
+The paper was presented at Africacrypt 2024:
 
-    | Cryptology ePrint Archive, Report 2024/1001, 2024. https://eprint.iacr.org/2024/1001
+ ````
+ @inproceedings{kirshanova2024guidance,
+  			title={Guidance for efficient selection of secure parameters for fully homomorphic encryption},
+  			author={Kirshanova, Elena and Marcolla, Chiara and Rovira, Sergi},
+  			booktitle={International Conference on Cryptology in Africa},
+  			pages={376--400},
+  			year={2024},
+  			organization={Springer}
+			}
+ ````
+  
+  			
+A pre-print is available as
+	 
+	 	
+ | Cryptology ePrint Archive, Report [2024/1001](https://eprint.iacr.org/2024/1001), 2024.
+
