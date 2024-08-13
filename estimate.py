@@ -23,51 +23,6 @@ except ImportError:
     print("Warning: Failed to import lattice_estimator, some options will not work")
     estimator_installed = 0
 
-def helper():
-    #print('python3 estimate.py --param "lambda" --file "example_lambda_binary.csv"')
-    print('python3 estimate.py --param "lambda" --n "1024" --logq "20-30;35;40-60" --secret "binary" --error "3.19"')
-    print('python3 estimate.py --param "n" --lambda "80" --logq "20-30" --dist "binary" --verify 1')
-    print('python3 estimate.py --param "n" --file "example_n_ternary.csv"')
-    print('python3 estimate.py --param "logq" --lambda "80" --n "1024" --dist "binary"')
-    print('python3 estimate.py --param "std_e" --lambda "80" --n "1024" --logq "20" --dist "binary"')
-    sys.exit()
-
-paper = 'https://eprint.iacr.org/2024/1001'
-
-def create_explanation_dict(headers):
-    explanations = {
-        "Secret dist.": "The distribution of the secret (can be either binary or ternary)",
-        "lambda": "The security level",
-        "log q": "The size of the modulus q in bits",
-        "usvp_s (Eq. 21)": "The output of Eq. 21 of " + paper,
-        "lwe est": "The output of running the Lattice Estimator using the output of our formulas and the rest of the LWE parameters",
-        "usvp_s pow2": "Closest power of 2 to the output of Eq. 21",
-        "bdd_s (Eq. 22)": "The output of Eq. 22 of " + paper,
-        "bdd_s pow2": "Closest power of 2 to the output of Eq. 22"
-    }
-
-    # Create a dictionary using the headers and explanations
-    explanation_dict = {}
-    for header in headers:
-        # Add the explanation if it exists in the explanations dictionary, otherwise use a default message
-        explanation_dict[header] = explanations.get(header, "No explanation available for this header.")
-
-    return explanation_dict
-
-def helper_headers(header):
-    explanation_dict = create_explanation_dict(header)
-
-    max_length = max(len(header) for header in explanation_dict.keys())
-    max_length_exp = max(len(explanation) for explanation in explanation_dict.values())
-
-    # Print each header and its explanation with proper formatting
-    for header, explanation in explanation_dict.items():
-        print(f"{header:<{max_length}}: {explanation}")
-
-    print("." * max_length_exp)
-    print('\n')
-
-
 
 def main(argv):
     secret = "binary"
@@ -154,7 +109,7 @@ def main(argv):
         if(verify):
             headers = ["Secret dist.", "lambda", "log q", "usvp_s (Eq. 21)", "lwe est", "usvp_s pow2", "lwe est", "bdd_s (Eq. 22)", "lwe est", "bdd_s pow2", "lwe est"]
         else:
-            headers = ["Secret dist.", "lambda", "log q", "usvp_s (Eq. 21)", "usvp_s pow2", "usvp_s num", "bdd_s (Eq. 22)", "bdd_s pow2", "bdd_s num"]
+            headers = ["Secret dist.", "lambda", "log q", "usvp_s (Eq. 21)", "usvp_s pow2", "usvp_s num", "bdd", "bdd pow2", "bdd_s (Eq. 22)", "bdd_s pow2", "bdd_s num"]
 
         helper_headers(headers)
 
@@ -178,11 +133,11 @@ def main(argv):
         else:
             for lq in logq:
                 est_usvp = int(math.ceil(model_n_usvp(l, lq, n_usvp_s)))
-                est_bdd = int(math.ceil(model_n_bdd(l, lq,  std_s, std_e, n_bdd_s)))
+                est_bdd = int(math.ceil(model_n_bdd(l, lq,  std_s, std_e, n_bdd_s))) #n_bdd_s is just a placeholder here
+                est_bdd_s = int(math.ceil(model_n_bdd_s(l, lq,  std_s, std_e, n_bdd_s)))
                 est_usvp_pow = closest_power_of_2(est_usvp)
                 est_bdd_pow = closest_power_of_2(est_bdd)
-                std_s = 0.816496580927726
-                std_e = 3.19
+                est_bdd_s_pow = closest_power_of_2(est_bdd_s)
                 est_usvp_numerical = int(math.ceil(numerical_n_usvp(est_usvp, lq,  std_s, std_e)))
                 est_bdd_numerical = int(math.ceil(numerical_n_bdd(est_bdd, lq,  std_s, std_e)))
 
@@ -191,7 +146,7 @@ def main(argv):
                     data_point = [secret, l, lq, est_usvp, lwe_usvp, est_usvp_pow, lwe_usvp_pow, est_bdd, lwe_bdd, est_bdd_pow, lwe_bdd_pow]
 
                 else:
-                    data_point = [secret, l, lq, est_usvp, est_usvp_pow, est_usvp_numerical, est_bdd, est_bdd_pow, est_bdd_numerical]
+                    data_point = [secret, l, lq, est_usvp, est_usvp_pow, est_usvp_numerical, est_bdd, est_bdd_pow, est_bdd_s, est_bdd_s_pow, est_bdd_numerical]
 
                 data.append(data_point)
 
@@ -201,6 +156,8 @@ def main(argv):
             headers = ["Secret dist.", "lambda", "n", "logq usvp", "logq bdd", "lwe est"]
         else:
             headers = ["Secret dist.", "lambda", "n", "logq usvp", "logq bdd"]
+
+        helper_headers(headers)
 
         if file_path:
             entries = load_all_from_csv(file_path)
@@ -238,6 +195,8 @@ def main(argv):
         else:
             headers = ["Secret dist.", "lambda", "n", "logq", "std_e usvp", "std_e bdd"]
 
+        helper_headers(headers)
+
         if file_path:
             entries = load_all_from_csv(file_path)
             for entry in entries:
@@ -257,8 +216,6 @@ def main(argv):
         else:
 
             for lq in logq:
-
-                std_s = 0.816496580927726
                 est_usvp_numerical = numerical_std_e_usvp(lwe_d, lq, std_s)
                 est_bdd_numerical = numerical_std_e_bdd(lwe_d, lq, std_s)
 
@@ -290,6 +247,8 @@ def main(argv):
             headers = ["Secret dist.", "LWE dim.", "log q", "usvp (Eq. 14)", "diff", "usvp_s (Eq. 16)", "diff", "bdd (Eq. 17)", "diff", "bdd_s (Eq. 20)", "diff", "Estimator"]
         else:
             headers = ["Secret dist.", "LWE dim.", "log q", "usvp (Eq. 14)", "usvp_s (Eq. 16)", "bdd (Eq. 17)", "bdd_s (Eq. 20)"]
+
+        helper_headers(headers)
 
         if file_path:
             entries = load_all_from_csv(file_path)

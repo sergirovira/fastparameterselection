@@ -118,13 +118,33 @@ def model_lambda_bdd_s(d, logq, params):
     return np.multiply(np.divide(params[0] * d, lnq), 
                        np.log(params[1] * d / lnq)) + np.multiply(params[2], np.log(d)) + params[3]
 
+#TODO: add parameters
+def model_n_bdd(l, logq, std_s, std_e, params):
+    sigma = std_e
+    zeta = std_e / std_s
+    beta_approx = (l - np.log(100*l) - 16.4)/0.292 #approximate beta from lambda
+    #print(beta_approx.n(), beta)
+    lnq = np.multiply(logq, ln2)
+    n = l
+
+    A = 2*lnq
+    B = beta_approx
+    C = np.log(beta_approx/const)
+    D = lnq - np.log(zeta)
+    E = 2*np.log(sigma*np.sqrt(const))
+
+    denom = C*(A+2*D)**2
+    nom = A*B*(A+C-E)**2
+    #print(nom.n()/denom.n())
+    return nom/denom
+
 # Eq. (21)
 def model_n_usvp(l, logq, params):
     lnq = np.multiply(logq, ln2)
     return np.multiply(np.divide(l + params[0] * np.log(lnq), params[1] * np.log(l) + params[2]) + params[3], lnq)
 
 # Eq. (22)
-def model_n_bdd(l, logq, std_s, std_e, params):
+def model_n_bdd_s(l, logq, std_s, std_e, params):
     sigma = std_e
 
     chi = std_e/std_s
