@@ -17,6 +17,8 @@ from numerical_solver import *
 sys.path.append('../lattice-estimator')
 estimator_installed = 1
 
+import matplotlib.pyplot as plt
+
 try:
     from estimator import *
 except ImportError:
@@ -93,6 +95,24 @@ def main(argv):
         n_bdd_s = n_bdd_s_ter
 
 
+   
+    # std_e_values = np.linspace(0.1, 500, 100)  # Adjust the range as needed
+
+    # print(std_e_values)
+
+    # eq_values = np.array([numerical_std_e_bdd_plot(l, lwe_d, logq, std_s, std_e) for std_e in std_e_values])
+
+    # # Plotting the function
+    # plt.figure(figsize=(10, 6))
+    # plt.plot(std_e_values, eq_values, label=r'$eq(\sigma_e)$')
+    # #plt.axhline(0, color='red', linestyle='--', label='y=0 (Root)')
+    # plt.xlabel(r'$\sigma_e$')
+    # plt.ylabel(r'$eq(\sigma_e)$')
+    # plt.title('Plot of the equation function $eq(\sigma_e)$')
+    # plt.legend()
+    # plt.grid(True)
+    # plt.show()
+
     # If we select to run the formulas for the LWE dimension, we get an output of the following form:
     #
     #Secret dist. | lambda | log q | usvp_s (Eq. 21) | lwe est | usvp_s pow2 | lwe est | bdd_s (Eq. 22) | lwe est | bdd_s pow2 | lwe est
@@ -153,9 +173,9 @@ def main(argv):
     elif param == 'logq':
         
         if(verify):
-            headers = ["Secret dist.", "lambda", "n", "logq usvp", "logq bdd", "lwe est"]
+            headers = ["Secret dist.", "lambda", "LWE dim.", "logq usvp", "logq bdd", "lwe est"]
         else:
-            headers = ["Secret dist.", "lambda", "n", "logq usvp", "logq bdd"]
+            headers = ["Secret dist.", "lambda", "LWE dim.", "logq usvp", "logq bdd"]
 
         helper_headers(headers)
 
@@ -191,9 +211,9 @@ def main(argv):
     elif param == 'std_e':
         
         if(verify):
-            headers = ["Secret dist.", "lambda", "n", "logq", "std_e bdd", "lwe est"]
+            headers = ["Secret dist.", "lambda", "LWE dim.", "log q", "std_e usvp", "lwe est", "std_e bdd", "lwe est", "bdd 3.19", "usvp 3.19"]
         else:
-            headers = ["Secret dist.", "lambda", "n", "logq", "std_e usvp", "std_e bdd"]
+            headers = ["Secret dist.", "lambda", "LWE dim.", "log q", "std_e usvp", "std_e bdd"]
 
         helper_headers(headers)
 
@@ -216,13 +236,18 @@ def main(argv):
         else:
 
             for lq in logq:
-                est_usvp_numerical = numerical_std_e_usvp(lwe_d, lq, std_s)
-                est_bdd_numerical = numerical_std_e_bdd(lwe_d, lq, std_s)
-
+                est_usvp_numerical = numerical_std_e_usvp(l, lwe_d, lq, std_s)
+                est_bdd_numerical = numerical_std_e_bdd(l, lwe_d, lq, std_s)
+                #est_usvp_numerical = numerical_std_e_bdd(l, lwe_d, lq, std_s) #TODO: remove this, just for testing
                 if(verify and estimator_installed):
                     lwe_parameters_bdd = LWE.Parameters(lwe_d, 2 ** lq, ND.UniformMod(secret_q), ND.DiscreteGaussian(est_bdd_numerical))
+                    lwe_parameters_usvp = LWE.Parameters(lwe_d, 2 ** lq, ND.UniformMod(secret_q), ND.DiscreteGaussian(est_usvp_numerical))
+                    lwe_parameters_bench = LWE.Parameters(lwe_d, 2 ** lq, ND.UniformMod(secret_q), ND.DiscreteGaussian(3.19))
                     lwe_bdd = math.floor(math.log2(LWE.primal_bdd(lwe_parameters_bdd)["rop"]))
-                    data_point = [secret, l, lwe_d, lq, est_bdd_numerical,lwe_bdd]
+                    lwe_usvp = math.floor(math.log2(LWE.primal_bdd(lwe_parameters_usvp)["rop"]))
+                    lwe_bdd_bench = math.floor(math.log2(LWE.primal_bdd(lwe_parameters_bdd)["rop"]))
+                    lwe_usvp_bench = math.floor(math.log2(LWE.primal_bdd(lwe_parameters_usvp)["rop"]))
+                    data_point = [secret, l, lwe_d, lq, est_usvp_numerical, lwe_usvp, est_bdd_numerical, lwe_bdd, lwe_bdd_bench, lwe_usvp_bench]
                 else:
                     data_point = [secret, l, lwe_d, lq, est_usvp_numerical, est_bdd_numerical]
 
@@ -298,7 +323,7 @@ def main(argv):
     if param == "est":
         for lq in logq:
             parameters = LWE.Parameters(lwe_d, 2 ** lq, ND.UniformMod(secret_q), ND.DiscreteGaussian(std_e))
-            LWE.estimate(parameters)
+            LWE.primal_bdd(parameters)
 
     
     print("\n")

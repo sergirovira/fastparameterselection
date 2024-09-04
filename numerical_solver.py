@@ -1,5 +1,13 @@
-from numpy import pi, exp, log, sqrt, multiply, divide
+from numpy import pi, exp, log, log2, sqrt, multiply, divide
 from scipy.optimize import fsolve, brentq, brenth, bisect, newton
+
+import numpy as np
+
+try:
+    from estimator import *
+except ImportError:
+    print("Warning: Failed to import lattice_estimator, some options will not work")
+    estimator_installed = 0
 
 PI = 3.14159265358979
 e = 2.71828182845905
@@ -103,76 +111,58 @@ def numerical_logq_usvp(l, n, std_s, std_e):
     
     return divide(lnq_solution[0], ln2)
 
-def numerical_std_e_bdd2(n, logq, std_s):
+
+def numerical_std_e_bdd(l, n, logq, std_s):
+    lnq = logq * log(2)
+
+    # find beta numerically
+    beta_initial_guess = (l - 16.4) / 0.292
+    d_optimal = lambda beta : sqrt(2 * n * lnq * beta / log(beta / const))
+    eq8 = lambda beta : l - (0.292 * beta + log2(8 * d_optimal(beta)) + 16.4)
+
+    beta_solution = fsolve(eq8, beta_initial_guess, full_output = False)
+    #print("Beta initial guess: ", beta_initial_guess)
+    #print("Beta: ", beta_solution)
+
+    # find std_e numerically
     zeta_initial_guess = 10
+    std_e_initial_guess = zeta_initial_guess * std_s
 
-    std_e_guess = zeta_initial_guess*std_s
+    std_e_initial_guess = 2
 
-    beta = numerical_beta_bdd(n, logq, std_s, std_e_guess)
+    nom = 2 * n * lnq * log(beta_solution/const)
+    denom = lambda std_e : log(beta_solution/const) + 2 * lnq - 2 * log(std_e) - log(const) - 2 * (lnq - log(max(1,np.round(std_e/std_s)))) * sqrt(n * log(beta_solution/const) / (2 * lnq * beta_solution))
+    eq6 = lambda std_e : beta_solution - nom / (denom(std_e)**2)
 
-    print("beta: ", beta)
-    print("sec: ", 0.292*beta + 16.4)
+    std_e_solution = fsolve(eq6, std_e_initial_guess, full_output = False)
 
-    beta = 80.0/0.292 - 16.4
+    #print("sol: ", std_e_solution)
 
-    lnq = multiply(logq, ln2)
+    #parameters = LWE.Parameters(n, 2 ** logq, ND.UniformMod(2), ND.DiscreteGaussian(std_e_solution[0]))
+    #estimator_output = LWE.primal_bdd(parameters)
+    #print("Verification: ", estimator_output)
 
-    nom = lambda zeta : 2 * n * lnq * log(beta/const)
-    denom = lambda zeta : log(beta/const) + 2 * lnq - 2 * log(std_e_guess) - log(const) - 2 * (lnq - log(zeta)) * sqrt(n * log(beta/const) / (2 * lnq * beta))
-    eq = lambda zeta : beta - nom(zeta) / (denom(zeta)**2)
+    return std_e_solution[0]
 
-    zeta_solution = fsolve(eq, zeta_initial_guess, full_output = False)
-    sigma_solution = std_s*zeta_solution[0]
-    
-    return sigma_solution
+def numerical_std_e_usvp(l, n, logq, std_s):
+    lnq = logq * log(2)
 
-def numerical_std_e_bdd(n, logq, std_s):
-    std_e_guess = 3.19
-
-    beta = numerical_beta_bdd(n, logq, std_s, std_e_guess)
-
-    print("beta: ", beta)
-    print("sec: ", 0.292 * beta + 16.4)
-
-    #beta = (80.0 - 16.4) / 0.292
-
-    lnq = multiply(logq, ln2)
-
-    def nom():
-        return 2 * n * lnq * log(beta / const)
-
-    def denom(std_e):
-        #print("zeta: ", zeta)
-        return (
-            log(beta / const)
-            + 2 * lnq
-            - 2 * log(std_e_guess)
-            - log(const)
-            - 2 * (lnq - log(std_s) - log(std_e)) * sqrt(n * log(beta / const) / (2 * lnq * beta))
-        )
-
-    def eq(std_e):
-        return beta - nom() / (denom(std_e) ** 2)
-
-    std_e = fsolve(eq, std_e_guess, full_output=False)
-
-    return std_e[0]
-
-def numerical_std_e_usvp(n, logq, std_s):
+    # find std_e and beta numerically
+    beta_initial_guess = (l - 16.4) / 0.292
     zeta_initial_guess = 10
-
-    std_e_guess = zeta_initial_guess*std_s
-
-    beta = numerical_beta_usvp(n, logq, std_s, std_e_guess)
-
-    lnq = multiply(logq, ln2)
-
-    nom = lambda zeta : 2 * n * (lnq - log(zeta)) * log(beta/const)
-    denom = lambda zeta : lnq + log(sqrt(beta)/(const*std_e_guess))
-    eq = lambda zeta : beta - nom(zeta) / (denom(zeta)**2)
-
-    zeta_solution = fsolve(eq, zeta_initial_guess, full_output = False)
-
-    sigma_solution = std_s*zeta_solution[0]
+    std_e_initial_guess = zeta_initial_guess * std_s
     
-    return sigma_solution
+    nom = lambda std_e, beta : 2 * n * (lnq - log(max(1,round(std_e/std_s)))) * log(beta/const)
+    denom = lambda std_e, beta : lnq + log(sqrt(beta)/(const*std_e))
+    eq11 = lambda std_e, beta : beta - nom(std_e, beta) / (denom(std_e, beta)**2)
+    
+    d_optimal = lambda std_e, beta : sqrt(2 * n * (lnq - log(max(1,round(std_e / std_s)))) * beta / log(beta / const))
+    eq12 = lambda std_e, beta : l - (0.292 * beta + log2(8 * d_optimal(std_e, beta)) + 16.4)
+
+    def system_usvp_std_e(x): # x[0] = std_e, x[1] = beta
+        f1 = eq11(x[0], x[1])
+        f2 = eq12(x[0], x[1])
+        return f1, f2
+    
+    std_e_solution, beta_solution = fsolve(system_usvp_std_e, [std_e_initial_guess, beta_initial_guess], full_output = False)
+    return std_e_solution

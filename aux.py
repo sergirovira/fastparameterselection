@@ -98,8 +98,9 @@ def helper():
     #print('python3 estimate.py --param "lambda" --file "example_lambda_binary.csv"')
     print('python3 estimate.py --param "lambda" --n "1024" --logq "20-30;35;40-60" --secret "binary" --error "3.19"')
     print('python3 estimate.py --param "n" --lambda "80" --logq "20-30" --secret "binary" --error "3.19"')
-    print('python3 estimate.py --param "logq" --lambda "80" --n "1024" --secret "binary" --error "3.19" --verify 1')
+    print('python3 estimate.py --param "logq" --lambda "80" --n "1024" --secret "binary" --error "3.19"')
     print('python3 estimate.py --param "std_e" --lambda "80" --n "1024" --logq "20" --secret "binary" --error "3.19"')
+    print('You can add  --verify 1 to any of the above commands to check the results against the Lattice Estimator')
     sys.exit()
 
 paper = 'https://eprint.iacr.org/2024/1001'
@@ -107,6 +108,7 @@ paper = 'https://eprint.iacr.org/2024/1001'
 def create_explanation_dict(headers):
     explanations = {
         "Secret dist.": "The distribution of the secret (can be either binary or ternary)",
+        "LWE dim.": "The Learning With Errors (LWE) dimension",
         "lambda": "The security level",
         "log q": "The size of the modulus q in bits",
         "usvp_s (Eq. 21)": "The output of Eq. 21 of " + paper,
@@ -115,7 +117,15 @@ def create_explanation_dict(headers):
         "bdd_s (Eq. 22)": "The output of Eq. 22 of " + paper,
         "bdd_s pow2": "Closest power of 2 to the output of Eq. 22",
         "bdd": "The output of Eq. XX of " + paper, #TODO update this reference
-        "bdd pow2": "Closest power of 2 to the output of Eq. XX" #TODO update this reference
+        "bdd pow2": "Closest power of 2 to the output of Eq. XX", #TODO update this reference
+        "usvp (Eq. 14)": "The output of Eq. 14 of " + paper,
+        "usvp_s (Eq. 16)": "The output of Eq. 16 of " + paper,
+        "bdd (Eq. 17)": "The output of Eq. 17 of " + paper,
+        "bdd_s (Eq. 20)": "The output of Eq. 20 of " + paper,
+        "logq usvp": "The result of numerically approximating log q using usvp",
+        "logq bdd": "The result of numerically approximating log q using bdd",
+        "std_e usvp": "The result of numerically approximating the standard deviation of the error using usvp",
+        "std_e bdd": "The result of numerically approximating the standard deviation of the error using bdd",
     }
 
     # Create a dictionary using the headers and explanations
