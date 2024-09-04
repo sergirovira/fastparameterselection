@@ -35,6 +35,7 @@ def main(argv):
     std_s = 0.5
     std_e = 3.19
     secret_q = 2
+    ntru_flag = False
 
     headers = []
     data = []
@@ -46,6 +47,8 @@ def main(argv):
 
     if (len(opts) == 0): helper()
 
+    output_dict = {}
+
     for opt, arg in opts:
         if opt == '-h':
             helper()
@@ -54,28 +57,38 @@ def main(argv):
             if secret == 'binary': 
                 std_s = UniformModStd(2)
                 secret_q = 2
+                output_dict['std_s'] = 0.5
             elif secret == 'ternary': 
                 std_s = UniformModStd(3)
                 secret_q = 3
+                output_dict['std_s'] = math.sqrt(2./3)
             else: 
                 print("Secret distribution not supported")
                 sys.exit() 
         elif opt == '--error':
             std_e = float(arg)
+            output_dict['std_e'] = std_e
         elif opt == '--param':
             param = arg
         elif opt == '--n':
             lwe_d = int(arg)
+            output_dict['std_e'] = lwe_d
         elif opt == '--lambda':
             l = int(arg)
+            output_dict['lambda'] = l
         elif opt == '--logq':
             logq = parse_logq(arg)
+            output_dict['logq'] = logq
         elif opt == '--verify':
             verify = int(arg)
         elif opt == '--file':
             file_path = arg
+        elif opt == '--ntru':
+            ntru_flag = True
         else:
             helper()
+
+
 
     if secret == "binary":
         lambda_usvp = lambda_usvp_bin
@@ -91,6 +104,7 @@ def main(argv):
         lambda_bdd_s = lambda_bdd_s_ter
         n_usvp_s = n_usvp_s_ter
         n_bdd_s = n_bdd_s_ter
+
 
 
     # If we select to run the formulas for the LWE dimension, we get an output of the following form:
@@ -130,6 +144,7 @@ def main(argv):
                 else:
                     data_point = [secret, l, logq, est_usvp, est_usvp_pow, est_bdd, est_bdd_pow]
                 data.append(data_point)
+                output_dict['n'] = min(est_usvp, est_usvp_pow, est_bdd, est_bdd_pow)  #take min for a more conservative overstretchness estimation
         else:
             for lq in logq:
                 est_usvp = int(math.ceil(model_n_usvp(l, lq, n_usvp_s)))
@@ -149,6 +164,8 @@ def main(argv):
                     data_point = [secret, l, lq, est_usvp, est_usvp_pow, est_usvp_numerical, est_bdd, est_bdd_pow, est_bdd_s, est_bdd_s_pow, est_bdd_numerical]
 
                 data.append(data_point)
+                output_dict['n'] = min(est_usvp, est_usvp_pow, est_bdd, est_bdd_pow, est_usvp_numerical, est_bdd_numerical)  #take min for a more conservative overstretchness estimation
+
 
     elif param == 'logq':
         
@@ -175,6 +192,7 @@ def main(argv):
                 else:
                     data_point = [secret, l, logq, est_usvp, est_usvp_pow, est_bdd, est_bdd_pow]
                 data.append(data_point)
+                output_dict['logq'] = max(est_usvp, est_bdd, est_usvp_pow, est_bdd_pow)
         else:
                 est_usvp_numerical = int(math.ceil(numerical_logq_usvp(l, lwe_d, std_s, std_e)))
                 est_bdd_numerical = int(math.ceil(numerical_logq_bdd(l, lwe_d, std_s, std_e)))
@@ -187,9 +205,8 @@ def main(argv):
                     data_point = [secret, l, lwe_d, est_usvp_numerical, est_bdd_numerical]
 
                 data.append(data_point)
-
+                output_dict['logq'] = max(est_usvp_numerical, est_bdd_numerical)
     elif param == 'std_e':
-        
         if(verify):
             headers = ["Secret dist.", "lambda", "n", "logq", "std_e bdd", "lwe est"]
         else:
@@ -213,6 +230,7 @@ def main(argv):
                 else:
                     data_point = [secret, l, logq, est_usvp, est_usvp_pow, est_bdd, est_bdd_pow]
                 data.append(data_point)
+                output_dict['std_e'] = min(est_usvp, est_bdd, est_usvp_pow, est_bdd_pow)
         else:
 
             for lq in logq:
@@ -225,8 +243,8 @@ def main(argv):
                     data_point = [secret, l, lwe_d, lq, est_bdd_numerical,lwe_bdd]
                 else:
                     data_point = [secret, l, lwe_d, lq, est_usvp_numerical, est_bdd_numerical]
+                output_dict['std_e'] = min(est_usvp_numerical, est_bdd_numerical)
 
-                data.append(data_point)
 
     # If we select to run the formulas for the security level, we get an output of the following form:
     #
@@ -242,7 +260,6 @@ def main(argv):
 
 
     elif param == 'lambda':
-
         if(verify):
             headers = ["Secret dist.", "LWE dim.", "log q", "usvp (Eq. 14)", "diff", "usvp_s (Eq. 16)", "diff", "bdd (Eq. 17)", "diff", "bdd_s (Eq. 20)", "diff", "Estimator"]
         else:
@@ -270,6 +287,7 @@ def main(argv):
                 else:
                     data_point = [secret, lwe_d, logq, est_usvp, est_usvp_s, est_bdd, est_bdd_s]
                 data.append(data_point)
+                output_dict['lambda'] = min(est_usvp, est_usvp_s, est_bdd, est_bdd_s)
         
         else:
             for lq in logq:
@@ -290,10 +308,18 @@ def main(argv):
                     data_point = [secret, lwe_d, lq, est_usvp, est_usvp_s, est_bdd, est_bdd_s]
 
                 data.append(data_point)
+                #output_dict['lambda'] = min(est_usvp, est_usvp_s, est_bdd, est_bdd_s)
 
     else: helper()
 
     print_table(headers,data)
+
+    #check if the output parameters are in the overstretched regime
+    if ntru_flag:
+        beta_ =  check_overstreched(output_dict)
+        if (beta_>0 and output_dict['lambda']>0 and abs(0.292*beta_ -output_dict['lambda'])>20):
+            print("Warning: the ntru parameters are in the overstretched regime")
+
     
     if param == "est":
         for lq in logq:
