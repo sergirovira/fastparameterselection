@@ -173,7 +173,7 @@ def main(argv):
     elif param == 'logq':
         
         if(verify):
-            headers = ["Secret dist.", "lambda", "LWE dim.", "logq usvp", "logq bdd", "lwe est"]
+            headers = ["Secret dist.", "lambda", "LWE dim.", "logq usvp", "lwe est", "logq bdd", "lwe est"]
         else:
             headers = ["Secret dist.", "lambda", "LWE dim.", "logq usvp", "logq bdd"]
 
@@ -201,8 +201,10 @@ def main(argv):
 
                 if(verify and estimator_installed):
                     lwe_parameters_bdd = LWE.Parameters(lwe_d, 2 ** est_bdd_numerical, ND.UniformMod(secret_q), ND.DiscreteGaussian(std_e))
+                    lwe_parameters_usvp = LWE.Parameters(lwe_d, 2 ** est_usvp_numerical, ND.UniformMod(secret_q), ND.DiscreteGaussian(std_e))
                     lwe_bdd = math.floor(math.log2(LWE.primal_bdd(lwe_parameters_bdd)["rop"]))
-                    data_point = [secret, l, lwe_d, est_usvp_numerical, est_bdd_numerical,lwe_bdd]
+                    lwe_usvp = math.floor(math.log2(LWE.primal_usvp(lwe_parameters_usvp)["rop"]))
+                    data_point = [secret, l, lwe_d, est_usvp_numerical, lwe_usvp, est_bdd_numerical,lwe_bdd]
                 else:
                     data_point = [secret, l, lwe_d, est_usvp_numerical, est_bdd_numerical]
 
@@ -269,7 +271,7 @@ def main(argv):
     elif param == 'lambda':
 
         if(verify):
-            headers = ["Secret dist.", "LWE dim.", "log q", "usvp (Eq. 14)", "diff", "usvp_s (Eq. 16)", "diff", "bdd (Eq. 17)", "diff", "bdd_s (Eq. 20)", "diff", "Estimator"]
+            headers = ["Secret dist.", "LWE dim.", "log q", "usvp (Eq. 14)", "diff", "usvp_s (Eq. 16)", "diff", "bdd (Eq. 17)", "diff", "bdd_s (Eq. 20)", "diff"]
         else:
             headers = ["Secret dist.", "LWE dim.", "log q", "usvp (Eq. 14)", "usvp_s (Eq. 16)", "bdd (Eq. 17)", "bdd_s (Eq. 20)"]
 

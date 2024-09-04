@@ -126,6 +126,9 @@ def create_explanation_dict(headers):
         "logq bdd": "The result of numerically approximating log q using bdd",
         "std_e usvp": "The result of numerically approximating the standard deviation of the error using usvp",
         "std_e bdd": "The result of numerically approximating the standard deviation of the error using bdd",
+        "bdd 3.19": "The result of running the Lattice Estimator with standard deviation of the error 3.19 and primal_bdd",
+        "usvp 3.19": "The result of running the Lattice Estimator with standard deviation of the error 3.19 and primal_usvp",
+        "diff": "The difference between the output of the previous column and the output of the Lattice Estimator"
     }
 
     # Create a dictionary using the headers and explanations
