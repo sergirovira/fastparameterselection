@@ -72,7 +72,7 @@ def main(argv):
             param = arg
         elif opt == '--n':
             lwe_d = int(arg)
-            output_dict['std_e'] = lwe_d
+            output_dict['n'] = lwe_d
         elif opt == '--lambda':
             l = int(arg)
             output_dict['lambda'] = l
