@@ -317,7 +317,7 @@ def main(argv):
     #check if the output parameters are in the overstretched regime
     if ntru_flag:
         beta_ =  check_overstreched(output_dict)
-        if (beta_>0 and output_dict['lambda']>0 and abs(0.292*beta_ -output_dict['lambda'])>20):
+        if (beta_>0 and output_dict['lambda']>0 and (output_dict['lambda']-0.292*beta_)>20):
             print("Warning: the ntru parameters are in the overstretched regime")
 
     
