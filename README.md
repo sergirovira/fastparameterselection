@@ -4,7 +4,7 @@ Parameters for FHE
 
 This repository implements the formulas of the paper [Guidance for Efficient Selection of Secure Parameters for Fully Homomorphic Encryption](https://eprint.iacr.org/2024/1001).
 
-Usage
+Usage (Parameter estimation)
 -----
 Find an estimation of the security level by running:
    ````
@@ -24,6 +24,26 @@ python3 estimate.py --param "std_e" --lambda "80" --n "1024" --logq "20" --secre
  ````
 
 Note: you can add the option ````--verify 1```` to any of the commands to compare the output of the formulas against the Lattice Estimator (see Dependencies).
+
+Usage (Fitting function)
+-----
+We include the file fit_formula.py which computes the best coefficients to fit our formulas with the output of the lattice estimator. 
+To use it, you do the following:
+
+   ````
+   python3 fit_formula.py --param A --attack B --dist C --simpl D
+   ````
+where
+
+A is in {'lambda','n'}, B is in {'bdd', 'usvp'}, C is in {'binary', 'ternary'} and D is in {0,1}.
+
+For example, 
+
+   ````
+   python3 fit_formula.py --param 'n' --attack 'usvp' --dist 'ternary' --simpl 0
+   ````
+will find the best parameters for the LWE dimension n, considering the usvp attack, ternary distribution and the formula containing beta. If we set --simpl 1
+we consider the formula where the dependency on beta has been removed. 
 
 Dependencies
 ---------
