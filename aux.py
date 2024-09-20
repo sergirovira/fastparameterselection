@@ -12,6 +12,18 @@ except ImportError:
 
 #Auxiliary functions needed in estimate.py
 
+#Exctracted from the Lattice Estimator
+def UniformModStd(q):
+    a = -(q // 2)
+    b = -a -1 if q % 2 == 0 else -a
+
+    if b < a:
+        raise ValueError(f"upper limit must be larger than lower limit but got: {b} < {a}")
+    m = b - a + 1
+    mean = (a + b) / float(2)
+    stddev = math.sqrt((m**2 - 1) / float(12))
+
+    return stddev
 
 def load_all_from_csv(file_path):
     with open(file_path, newline='') as csvfile:
@@ -81,3 +93,48 @@ def run_verification(lq,secret,est_usvp,est_bdd,est_usvp_pow,est_bdd_pow):
     lwe_bdd_pow = math.floor(math.log2(LWE.primal_bdd(lwe_parameters_bdd_pow)["rop"]))
 
     return lwe_usvp, lwe_bdd, lwe_usvp_pow, lwe_bdd_pow
+
+def helper():
+    #print('python3 estimate.py --param "lambda" --file "example_lambda_binary.csv"')
+    print('python3 estimate.py --param "lambda" --n "1024" --logq "20-30;35;40-60" --secret "binary" --error "3.19"')
+    print('python3 estimate.py --param "n" --lambda "80" --logq "20-30" --secret "binary" --error "3.19"')
+    print('python3 estimate.py --param "logq" --lambda "80" --n "1024" --secret "binary" --error "3.19" --verify 1')
+    print('python3 estimate.py --param "std_e" --lambda "80" --n "1024" --logq "20" --secret "binary" --error "3.19"')
+    sys.exit()
+
+paper = 'https://eprint.iacr.org/2024/1001'
+
+def create_explanation_dict(headers):
+    explanations = {
+        "Secret dist.": "The distribution of the secret (can be either binary or ternary)",
+        "lambda": "The security level",
+        "log q": "The size of the modulus q in bits",
+        "usvp_s (Eq. 21)": "The output of Eq. 21 of " + paper,
+        "lwe est": "The output of running the Lattice Estimator using the output of our formulas and the rest of the LWE parameters",
+        "usvp_s pow2": "Closest power of 2 to the output of Eq. 21",
+        "bdd_s (Eq. 22)": "The output of Eq. 22 of " + paper,
+        "bdd_s pow2": "Closest power of 2 to the output of Eq. 22",
+        "bdd": "The output of Eq. XX of " + paper, #TODO update this reference
+        "bdd pow2": "Closest power of 2 to the output of Eq. XX" #TODO update this reference
+    }
+
+    # Create a dictionary using the headers and explanations
+    explanation_dict = {}
+    for header in headers:
+        # Add the explanation if it exists in the explanations dictionary, otherwise use a default message
+        explanation_dict[header] = explanations.get(header, "No explanation available for this header.")
+
+    return explanation_dict
+
+def helper_headers(header):
+    explanation_dict = create_explanation_dict(header)
+
+    max_length = max(len(header) for header in explanation_dict.keys())
+    max_length_exp = max(len(explanation) for explanation in explanation_dict.values())
+
+    # Print each header and its explanation with proper formatting
+    for header, explanation in explanation_dict.items():
+        print(f"{header:<{max_length}}: {explanation}")
+
+    print("." * max_length_exp)
+    print('\n')
