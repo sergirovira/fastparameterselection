@@ -186,7 +186,7 @@ def numerical_std_e_bdd(l, n, logq, std_s):
 
     return std_e_solution[0]
 
-def numerical_std_e_bdd_eq5(l, n, logq, std_s):
+def numerical_std_e_bdd_eq5(l, n, logq, std_s): #how to the two functions compare? keep only one function.
     lnq = logq * ln2
 
     # find std_e and beta numerically
