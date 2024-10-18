@@ -58,8 +58,7 @@ def main(argv):
                 std_s = UniformModStd(2)
                 secret_q = 2
                 output_dict['std_s'] = 0.5
-            elif secret == 'ternary': 
-                std_s = UniformModStd(3)
+            elif secret == 'ternary':mo                std_s = UniformModStd(3)
                 secret_q = 3
                 output_dict['std_s'] = math.sqrt(2./3)
             else: 

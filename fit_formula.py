@@ -30,6 +30,26 @@ import random
 
 from config import *
 from formulas import *
+from aux import *
+
+secret = "binary"
+param = None
+lwe_d = None
+logQ = 64
+name_file = None
+verify = 0
+lwe_parameters = []
+std_s = 0.5
+std_e = 3.19
+secret_q = 2
+ntru_flag = False
+simpl = 0
+
+headers = []
+data = []
+params_list = [('P0', 0.07,0), ('P1', 0.34,0), ('P2', 1,0), ('P3', 1,0), ('P4', 1,0)] #, ('P5', 1,0)]
+
+verbose = 0
 
 def write_tuples_to_txt(tuples_list, filename):
     with open(filename, 'w') as file:
@@ -45,7 +65,7 @@ def merge_txt_files(input_files, output_file):
 #In the function 'model_n_bdd' these are called by their position.
 #E.g, alpha = params[0], beta = params[1], gamma = params[2], delta = params[3].
 #If you add a new parameter and don't use it in 'model_n_bdd', a math domain error will triger. 
-params_list = [('P0', 0.07,0), ('P1', 0.34,0), ('P2', 1,0), ('P3', 1,0), ('P4', 1,0)] #, ('P5', 1,0)]
+
 
 def random_color_generator():
     color = random.choice(list(mcolors.XKCD_COLORS.keys()))
@@ -231,10 +251,10 @@ def merge(list1, list2):
 
     return residues
 
-def degree_fit(params, logq, levels, secret_dist):
+def degree_fit(params, logq, levels, e_std, s_std, std_s_num):
 
     residues = ()
-
+    model = None
     new_params = []
 
     for p in params_list:
@@ -242,31 +262,30 @@ def degree_fit(params, logq, levels, secret_dist):
 
     for i, level in enumerate(levels):
         #print("level fit: ", level)
-        print("attack: ", attack)
+        #print("attack: ", attack)
 
-        print("degrees", degrees)
+        #print("degrees", degrees)
 
-        print("i: ", i)
-        print("param: ", param)
+        #print("i: ", i)
 
-        if param == 'n' and simpl == 0:
+        if param == 'n' and simpl == '0':
             if attack == 'bdd' :
-                model  = model_n_bdd(security_levels[i], logq, new_params) #, params['delta'])
+                model  = model_n_bdd(security_levels[i], logq, std_s, std_e, new_params) #, params['delta'])
             if attack == 'usvp':
                 model  = model_n_usvp(security_levels[i], logq, new_params) #, params['delta'])
 
-        if param == 'n' and simpl == 1:
+        if param == 'n' and simpl == '1':
             if attack == 'bdd' :
-                model  = model_n_bdd_s(security_levels[i], logq, new_params) #, params['delta'])
+                model  = model_n_bdd_s(security_levels[i], logq, std_s, std_e, new_params) #, params['delta'])
             if attack == 'usvp':
                 model  = model_n_usvp_s(security_levels[i], logq, new_params) #, params['delta'])
 
-        if param == 'lambda' and simpl == 0:
+        if param == 'lambda' and simpl == '0':
             if attack == 'usvp':
-                model  = model_lambda_usvp(degrees[i], logq, new_params) #, params['delta'])
+                model  = model_lambda_usvp(degrees[i], logq, s_std, e_std, new_params) #, params['delta'])
             if attack == 'bdd':
-                model = model_lambda_bdd(degrees[i],  logq, secret_dist[i], new_params) #,delta)
-        if param == 'lambda' and simpl == 1:
+                model = model_lambda_bdd(degrees[i],  logq,  s_std, e_std, std_s_num, new_params) #,delta)
+        if param == 'lambda' and simpl == '1':
             if attack == 'usvp':
                 model  = model_lambda_usvp_s(degrees[i], logq, new_params) #, params['delta'])
             if attack == 'bdd':
@@ -274,8 +293,6 @@ def degree_fit(params, logq, levels, secret_dist):
 
         if level != None:
             residues = np.concatenate((residues, degree_loss(model, level)))
-
-    print("residues: ", residues)
 
     return residues
 
@@ -334,24 +351,21 @@ def read_dict_from_file(filename):
         data = pickle.load(file)
         return data
 
-def fit_formula(points_est, secret_dist):
+def fit_formula(points_est, e_std, s_std, std_s_num, params):
 
     args = {'logq': logQ}
 
     args['levels'] = points_est
-    args['secret_dist'] = secret_dist
+    args['e_std'] = e_std
+    args['s_std'] = s_std
+    args['std_s_num'] = std_s_num 
+
+    if(verbose): print(points_est)
 
     fit = []
 
     fit = lmfit.minimize(degree_fit, params, nan_policy='omit', kws=args)
-    print(lmfit.fit_report(fit))
-
-    # try:
-    #     fit = lmfit.minimize(degree_fit, params, nan_policy='omit', kws=args)
-    #     print(lmfit.fit_report(fit))
-    # except ValueError:
-    #     print("Current formula converges to NaN")
-    #     exit(0)
+    #print(lmfit.fit_report(fit))
 
     fit_results = []
 
@@ -398,7 +412,7 @@ def plot_points_est(param, points_atk, points_est, points_secret_dist, fit_resul
             estimate = points_est[j][i]
 
             if not np.isnan(estimate):
-                print("point: ", "logq", logQ[i], "estimate", estimate, "color", color, "n: ", degrees[j])
+                if(verbose): print("point: ", "logq", logQ[i], "estimate", estimate, "color", color, "n: ", degrees[j])
                 num_points += 1
             
             if a == 0:
@@ -450,7 +464,7 @@ def plot_points_est(param, points_atk, points_est, points_secret_dist, fit_resul
     #             ax.plot(logQ[i], estimate, marker='*', linestyle='', color=color)
 
     
-    print("plotted points: ", plotted_points)
+    if(verbose): print("plotted points: ", plotted_points)
 
     modelQ = list(range(xmin,logQ[0])) + logQ + list(range(logQ[-1] + 1,xmax))
 
@@ -483,12 +497,12 @@ def plot_points_est(param, points_atk, points_est, points_secret_dist, fit_resul
 
             #print(error_file)
             ax.plot(modelQ, model,  linewidth=2, color=colours[i], linestyle="dotted", label='$lambda=' + str(level) + '$')
-    
+
     if param == 'lambda':
         for i, level in enumerate(degrees):
             if attack == 'usvp' and simpl == 0:
-                model = model_lambda_usvp(level,  modelQ, fit_results) #,delta)
-                model_error = model_lambda_usvp(level,  logQ, fit_results) #,delta)
+                model = model_lambda_usvp(level,  modelQ, secret, fit_results) #,delta)
+                model_error = model_lambda_usvp(level,  logQ, secret, fit_results) #,delta)
             if attack == 'usvp' and simpl == 1:
                 model = model_lambda_usvp_s(level,  modelQ, fit_results) #,delta)
                 model_error = model_lambda_usvp_s(level,  logQ, fit_results) #,delta)
@@ -567,54 +581,103 @@ def save_dict(dictionary, filename):
         print("Error saving dictionary:", e)
 
 
-if __name__ == "__main__":
+def main(argv):
+
+    global simpl
+    global param
+    global attack
+    global logQ
+    global degrees
     
-    argv = sys.argv[1:]
+    # argv = sys.argv[1:]
    
-    opts, args = getopt.getopt(argv,"hb",["xmin=","xmax=","ymin=","ymax=", "yminbound=", "bound=","levels=", "attack=", "dist=", "param=", "simpl="])
+    # opts, args = getopt.getopt(argv,"hb",["xmin=","xmax=","ymin=","ymax=", "yminbound=", "bound=","levels=", "attack=", "dist=", "param=", "simpl="])
 
-    print(opts)
+    verbose = 0
 
-    for opt in opts:
-        print(opt[0])
-        if opt[0] == '-h':
-            print('python3 find_d_HOPE_linear_sL.py --xmin <min x coordinate> --xmax <max x coordinate> --ymin <min y coordinate> --ymax <max x coordinate> --bound <bound> --levels "level1 level2 ... leveln" ')
-            sys.exit()
-        elif opt[0] in ("--xmin"):
-            xmin = int(opt[1])
-        elif opt[0] in ("--xmax"):
-            xmax = int(opt[1])
-        elif opt[0] in ("--ymin"):
-            ymin = int(opt[1])
-        elif opt[0] in ("--ymax"):
-            ymax = int(opt[1])
-        elif opt[0] in ("-b,--bound"):
-            bound = float(opt[1])
-        elif opt[0] in ("--yminbound"):
-            yminbound = int(opt[1])
-        elif opt[0] in ("--attack"):
-            attack = opt[1]
-        elif opt[0] in ("--dist"):
-            secret = opt[1]
-        elif opt[0] in ("--param"):
-            param = opt[1]
-        elif opt[0] in ("--simpl"):
-            simpl = int(opt[1])
-        elif opt[0] in ("--levels"):
-            security_levels = opt[1].split()
-            security_levels = [eval(i) for i in security_levels]
-            security_levels.sort(reverse=True)
+    # for opt in opts:
+    #     if opt[0] == '-h':
+    #         print('python3 find_d_HOPE_linear_sL.py --xmin <min x coordinate> --xmax <max x coordinate> --ymin <min y coordinate> --ymax <max x coordinate> --bound <bound> --levels "level1 level2 ... leveln" ')
+    #         sys.exit()
+    #     elif opt[0] in ("--xmin"):
+    #         xmin = int(opt[1])
+    #     elif opt[0] in ("--xmax"):
+    #         xmax = int(opt[1])
+    #     elif opt[0] in ("--ymin"):
+    #         ymin = int(opt[1])
+    #     elif opt[0] in ("--ymax"):
+    #         ymax = int(opt[1])
+    #     elif opt[0] in ("-b,--bound"):
+    #         bound = float(opt[1])
+    #     elif opt[0] in ("--yminbound"):
+    #         yminbound = int(opt[1])
+    #     elif opt[0] in ("--attack"):
+    #         attack = opt[1]
+    #     elif opt[0] in ("--dist"):
+    #         secret = opt[1]
+    #     elif opt[0] in ("--param"):
+    #         param = opt[1]
+    #     elif opt[0] in ("--simpl"):
+    #         simpl = int(opt[1])
+    #     elif opt[0] in ("--levels"):
+    #         security_levels = opt[1].split()
+    #         security_levels = [eval(i) for i in security_levels]
+    #         security_levels.sort(reverse=True)
+
+    #try:
+    opts, args = getopt.getopt(argv, "h", ["attack=", "dist=", "secret=", "error=", "param=", "n=", "lambda=", "file=", "simpl="])
+    #except:
+    #helper_fit()
+
+    #if (len(opts) == 0): helper_fit()
+
+    output_dict = {}
+
+    for opt, arg in opts:
+        if opt == '-h':
+            helper()
+        elif opt == '--attack':
+             attack = arg
+        elif opt == '--secret':
+            secret = arg
+            if secret == 'binary': 
+                std_s = UniformModStd(2)
+                secret_q = 2
+                output_dict['std_s'] = 0.5
+            elif secret == 'ternary': 
+                std_s = UniformModStd(3)
+                secret_q = 3
+                output_dict['std_s'] = math.sqrt(2./3)
+            else: 
+                print("Secret distribution not supported")
+                sys.exit() 
+        elif opt == '--error':
+            std_e = float(arg)
+            output_dict['std_e'] = std_e
+        elif opt == "--param":
+            param = arg
+        elif opt == '--file':
+            name_file = arg
+        elif opt == '--simpl':
+            simpl = arg
+        else:
+            helper_fit()
 
     if param == 'n':
         if secret == "binary":
-            degrees = list(range(2**10 + 16,2**11 + 2,2))
+            degrees = range(2**10, 2**12, 32)
             logQ = list(range(20,65))
-            ymin = 1100
-            ymax = 2000
+            ymin = 1000
+            ymax = 2050
             xmin = 20
             xmax = 65
-            name_file = 'data_bin.pkl'
-
+            if attack == 'bdd':
+                name_file = 'data_binary_bdd.pkl'
+            elif attack == 'usvp':
+                name_file = 'data_binary_usvp.pkl'
+            else:
+                print("Attack " + attack + " not considered")
+                exit(1) 
         else:
             degrees = list(range(2**10,2**15,2**2))
             logQ = list(range(10,200)) + list(range(200,500, 10)) + list(range(500,1000,10)) + list(range(1000,1600,50))
@@ -624,7 +687,7 @@ if __name__ == "__main__":
             xmax = 1400
             name_file = 'data_ternary.pkl'
 
-    if param == 'lambda':
+    if param == "lambda":
         if secret == "binary":
             degrees = [2**10, 2**11]
             logQ = list(range(20,65))
@@ -632,7 +695,13 @@ if __name__ == "__main__":
             ymax = 256
             xmin = 10
             xmax = 90
-            name_file = 'data_bin.pkl'
+            if attack == 'bdd':
+                name_file = 'data_binary_bdd.pkl'
+            elif attack == 'usvp':
+                name_file = 'data_binary_usvp.pkl'
+            else:
+                print("Attack " + attack + " not considered")
+                exit(1) 
         if secret == "ternary":
             degrees = [2**10, 1696, 2**11, 2032, 2**13,9216,10240,11264, 12609, 13633,  14657,15681, 16384,17408, 19456, 22528, 24194, 25218, 28290, 32386, 32768]
             #degrees = [10240,11264, 12609, 13633, 14657, 1568]
@@ -651,7 +720,6 @@ if __name__ == "__main__":
             xmin = 1
             xmax = 64
             name_file = 'combined.pkl'
-
     
     points_est = []
     points_atk = []
@@ -672,7 +740,9 @@ if __name__ == "__main__":
     with open(name_file, 'rb') as file:
         d_estimates = pickle.load(file)
 
-    print("d_estimates", d_estimates)
+    if(verbose): 
+        print("file name", name_file)
+        print("d_estimates", d_estimates)
 
     if secret == 'tfhe':
         d_estimates_filtered = [d_estimates]
@@ -699,23 +769,22 @@ if __name__ == "__main__":
             points_secret_dist.append([np.nan] * len(logQ))
 
         for i,d in enumerate(security_levels):
-            print("i: ", i)
             for tup in d_estimates_filtered[i]:
-                print(tup)
+                if(verbose): print(tup)
                 if(attack == 'bdd' and tup[3] == 1):
                     points_est[i][logQ.index(tup[1])] = tup[0]
                     points_atk[i][logQ.index(tup[1])] = tup[3]
-                    if secret == 'tfhe':
-                        points_secret_dist[i][logQ.index(tup[1])] = 2**tup[4]
-                    else:
-                        points_secret_dist[i][logQ.index(tup[1])] = 3.19
+                    # if secret == 'tfhe':
+                    #     points_secret_dist[i][logQ.index(tup[1])] = 2**tup[4]
+                    # else:
+                    #     points_secret_dist[i][logQ.index(tup[1])] = 3.19
                 if(attack == 'usvp' and tup[3] == 0):
                     points_est[i][logQ.index(tup[1])] = tup[0]
                     points_atk[i][logQ.index(tup[1])] = tup[3]
-                    if secret == 'tfhe':
-                        points_secret_dist[i][logQ.index(tup[1])] = 2**tup[4]
-                    else:
-                        points_secret_dist[i][logQ.index(tup[1])] = 3.19
+                    # if secret == 'tfhe':
+                    #     points_secret_dist[i][logQ.index(tup[1])] = 2**tup[4]
+                    # else:
+                    #     points_secret_dist[i][logQ.index(tup[1])] = 3.19
 
     if(param == 'lambda'):
 
@@ -725,25 +794,28 @@ if __name__ == "__main__":
             points_secret_dist.append([np.nan] * len(logQ))
 
         for filtered in d_estimates_filtered:
-            print(filtered)
             for tup in filtered:
-                print("tup: ", tup)
+                if(verbose): print("tup: ", tup)
+
                 for i,d in enumerate(degrees):
                     if tup[0] == d and attack == 'usvp' and tup[3] == 0: 
                         points_est[i][logQ.index(tup[1])] = tup[2]
                         points_atk[i][logQ.index(tup[1])] = tup[3]
-                        #points_secret_dist[i][[logQ.index(tup[1])]] = 3.19
+                        # if secret == 'tfhe':
+                        #     points_secret_dist[i][logQ.index(tup[1])] = 2**tup[4]
+                        # else:
+                        #     points_secret_dist[i][logQ.index(tup[1])] = 3.19
                     if tup[0] == d and attack == 'bdd' and tup[3] == 1: 
                         points_est[i][logQ.index(tup[1])] = tup[2]
                         points_atk[i][logQ.index(tup[1])] = tup[3]
-                        if secret == 'tfhe':
-                            points_secret_dist[i][logQ.index(tup[1])] = 2**tup[4]
-                        else:
-                            points_secret_dist[i][logQ.index(tup[1])] = 3.19
+                        # if secret == 'tfhe':
+                        #     points_secret_dist[i][logQ.index(tup[1])] = 2**tup[4]
+                        # else:
+                        #     points_secret_dist[i][logQ.index(tup[1])] = 3.19
 
-    print("points_est",points_est)
+    if(verbose): print("points_est",points_est)
 
-    results = fit_formula(points_est, points_secret_dist)
+    results = fit_formula(points_est, std_e, std_s, secret_q, params)
 
     #results = [0.28891458, 0.878668965, 19.1069565,1,1]
     #results = [0.26497, 3.25511,-13.69437,1,1]
@@ -758,48 +830,17 @@ if __name__ == "__main__":
         exit(0)
         #model_lambda_bdd(level,  modelQ, points_secret_dist[i], fit_results)
 
-    plot_points_est(param, points_atk, points_est, points_secret_dist, results)
+    #plot_points_est(param, points_atk, points_est, points_secret_dist, results)
+
+    #s = param + attack + str(simpl) + secret
+
+    #name = "params_" + s + ".txt"
+    #np.savetxt(name, np.array(results))
+
+    print("\n Formula: ", opts)
+    print("Params: ", results, "\n")
 
 
-
-    s = param + attack + str(simpl) + secret
-
-    name = "params_" + s + ".txt"
-    np.savetxt(name, np.array(results))
-
-
-
-    # num_points2 = 0
-
-    # for d in d_estimates_filtered:
-    #     num_points2 += len(d)
-    #     print(len(d))
-    
-    # print("num points plotted:", num_points, "num points filtered: ", num_points2)
-
-    # string = "plot_files/n_ter_bdd_"
-
-    # filenames = []
-
-    # for i,d in enumerate(d_estimates_filtered):
-    #     print("i: ", i)
-    #     filenames.append(string + str(security_levels[i]) + ".txt")
-    #     write_tuples_to_txt(d, string + str(security_levels[i]) + ".txt")
-    #     for tup in d:
-    #         print(tup)
-
-    # merge_txt_files(filenames, "plot_files/n_ter_bdd_all.txt")
-
-
-
-
-
-
-
-
-
-
-
-
-
+if __name__ == "__main__":
+    main(sys.argv[1:])
 
