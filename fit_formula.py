@@ -375,7 +375,7 @@ def fit_formula(points_est, e_std, s_std, std_s_num, params):
 
     return fit_results
 
-def plot_points_est(param, points_atk, points_est, points_secret_dist, fit_results):
+def plot_points_est(param, points_atk, points_est, points_secret_dist, fit_results, std_s, std_e):
     fig, ax = plt.subplots(figsize=(11,8))
 
     fig.gca().set_ylabel(r'$d$')
@@ -475,42 +475,42 @@ def plot_points_est(param, points_atk, points_est, points_secret_dist, fit_resul
 
     if param == 'n':
         for i, level in enumerate(security_levels):
-            if attack == 'bdd' and simpl == 0:
-                model = model_n_bdd(level,  modelQ, fit_results) #,delta)
-                model_error = model_n_bdd(level,  logQ, fit_results) #,delta)
-            if attack == 'bdd' and simpl == 1:
+            if attack == 'bdd' and simpl == '0':
+                model = model_n_bdd(level,  modelQ, std_s, std_e, fit_results) #,delta)
+                model_error = model_n_bdd(level,  logQ, std_s, std_e, fit_results) #,delta)
+            if attack == 'bdd' and simpl == '1':
                 model = model_n_bdd_s(level,  modelQ, fit_results) #,delta)
                 model_error = model_n_bdd_s(level,  logQ, fit_results) #,delta)
-            if attack == 'usvp' and simpl == 0: 
+            if attack == 'usvp' and simpl == '0': 
                 model = model_n_usvp(level,  modelQ, fit_results) #,delta)
                 model_error = model_n_usvp(level,  logQ, fit_results) #,delta)
-            if attack == 'usvp' and simpl == 1: 
+            if attack == 'usvp' and simpl == '1': 
                 model = model_n_usvp_s(level,  modelQ, fit_results) #,delta)
                 model_error = model_n_usvp_s(level,  logQ, fit_results) #,delta)
 
 
-            error_file[level] = {}
+            # error_file[level] = {}
 
-            for j, q in enumerate(logQ):
-                if not math.isnan(points_est[i][j]):
-                    error_file[level][q] = (points_est[i][j], model_error[j])
+            # for j, q in enumerate(logQ):
+            #     if not math.isnan(points_est[i][j]):
+            #         error_file[level][q] = (points_est[i][j], model_error[j])
 
             #print(error_file)
             ax.plot(modelQ, model,  linewidth=2, color=colours[i], linestyle="dotted", label='$lambda=' + str(level) + '$')
 
     if param == 'lambda':
         for i, level in enumerate(degrees):
-            if attack == 'usvp' and simpl == 0:
+            if attack == 'usvp' and simpl == '0':
                 model = model_lambda_usvp(level,  modelQ, secret, fit_results) #,delta)
                 model_error = model_lambda_usvp(level,  logQ, secret, fit_results) #,delta)
-            if attack == 'usvp' and simpl == 1:
+            if attack == 'usvp' and simpl == '1':
                 model = model_lambda_usvp_s(level,  modelQ, fit_results) #,delta)
                 model_error = model_lambda_usvp_s(level,  logQ, fit_results) #,delta)
-            if attack == 'bdd' and simpl == 0:
+            if attack == 'bdd' and simpl == '0':
                 model = model_lambda_bdd(level,  modelQ, points_secret_dist[i], fit_results) #,delta)
                 model_error = model_lambda_bdd(level,  logQ, points_secret_dist[i], fit_results) #,delta)
                 print("model: ", model)
-            if attack == 'bdd' and simpl == 1:
+            if attack == 'bdd' and simpl == '1':
                 model = model_lambda_bdd_s(level,  modelQ, fit_results) #,delta)
                 model_error = model_lambda_bdd_s(level,  logQ, fit_results) #,delta)
 
@@ -830,14 +830,14 @@ def main(argv):
         exit(0)
         #model_lambda_bdd(level,  modelQ, points_secret_dist[i], fit_results)
 
-    #plot_points_est(param, points_atk, points_est, points_secret_dist, results)
+    #plot_points_est(param, points_atk, points_est, points_secret_dist, results, std_s, std_e)
 
     #s = param + attack + str(simpl) + secret
 
     #name = "params_" + s + ".txt"
     #np.savetxt(name, np.array(results))
 
-    print("\n Formula: ", opts)
+    print("\nFormula: ", opts)
     print("Params: ", results, "\n")
 
 
