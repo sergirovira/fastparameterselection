@@ -4,7 +4,7 @@ from scipy.optimize import fsolve
 import numpy as np
 
 # import sys
-# sys.path.append('../lattice-estimator')
+# sys.path.append('../latticeestimator')
 # estimator_installed = 1
 
 import matplotlib.pyplot as plt
@@ -168,34 +168,72 @@ def numerical_std_e_bdd(l, n, logq, std_s):
     eq8 = lambda beta : l - (0.292 * beta + log2(8 * d_optimal(beta)) + 16.4)
 
     beta_solution = fsolve(eq8, beta_initial_guess, full_output = False)
+
    
     # find std_e numerically
-    std_e_initial_guess = 3.19
+    std_e_initial_guess = 0.001
 
-    zeta = lambda std_e : max(1, np.round(std_e/std_s))
+    zeta = lambda ln_std_e : max(0, log(std_s)-ln_std_e)
     nom = 2 * n * lnq * log(beta_solution/const)
     denom = lambda std_e : log(beta_solution/const) + 2 * lnq - 2 * log(std_e) - log(const) - 2 * (lnq - log(zeta(std_e))) * sqrt(n * log(beta_solution/const) / (2 * lnq * beta_solution))
     eq6 = lambda std_e : beta_solution - nom / (denom(std_e)**2)
 
     std_e_solution = fsolve(eq6, std_e_initial_guess, full_output = False)
 
+
     # d_lwe = LWE.primal_bdd(LWE.Parameters(n, 2 ** logq, ND.UniformMod(2), ND.DiscreteGaussian(std_e_solution[0])))["d"]
     # print("d lwe", d_lwe)
     # print("d eq6", d_optimal(beta_solution))
     # print(" ")
 
-    return std_e_solution[0]
+    return exp(std_e_solution[0])
+
+def numerical_std_e_bdd_ln(l, n, logq, std_s):
+    lnq = logq * ln2
+
+    # find beta numerically
+    beta_initial_guess = (l - 16.4) / 0.292
+    d_optimal = lambda beta : sqrt(2 * n * lnq * beta / log(beta / const))
+    eq8 = lambda beta : l - (0.292 * beta + log2(8 * d_optimal(beta)) + 16.4)
+
+    beta_solution = fsolve(eq8, beta_initial_guess, full_output = False)
+
+    d = d_optimal(beta_solution)
+
+    print(beta_solution, d)
+
+    # find std_e numerically
+    std_e_initial_guess = 0.001
+
+    zeta = lambda ln_std_e : max(0, log(std_s)-ln_std_e)
+
+    nom = d * log(beta_solution/const)
+    denom = lambda ln_std_e : log(beta_solution/const) + 2 * lnq - 2*ln_std_e - log(const) - 2*n/d*(lnq - zeta(ln_std_e))
+    eq6 = lambda ln_std_e : beta_solution - nom / (denom(ln_std_e))
+
+    std_e_solution = fsolve(eq6, std_e_initial_guess, full_output = True)
+
+    if not std_e_solution[2]==1:
+        print(std_e_solution[3])
+        return -1
+
+
+    #print(std_e_initial_guess, eq6(std_e_initial_guess), eq6(std_e_solution[0][0]),  std_e_solution[0][0])
+    #print(std_e_solution)
+
+    return exp(std_e_solution[0][0])
+
 
 def numerical_std_e_bdd_eq5(l, n, logq, std_s): #how to the two functions compare? keep only one function.
     lnq = logq * ln2
 
     # find std_e and beta numerically
     beta_initial_guess = (l - 16.4) / 0.292
-    std_e_initial_guess = 3.19
+    std_e_initial_guess = 120.4
 
     zeta = lambda std_e : max(1, np.round(std_e/std_s))
 
-    d_optimal = lambda std_e, beta : sqrt(2 * n * (lnq - log(zeta(std_e))) * beta / log(beta / const))
+    d_optimal = lambda std_e, beta : min(42*n, sqrt(2 * n * (lnq - log(zeta(std_e)) ) * beta / log(beta / const)))
 
     nom = lambda std_e, beta : d_optimal(std_e, beta) * log(beta/const)
     denom = lambda std_e, beta : log(beta/const) + 2 * lnq - 2 * log(std_e) - log(const) - 2 * (lnq - log(zeta(std_e))) * n / d_optimal(std_e, beta)
@@ -208,10 +246,11 @@ def numerical_std_e_bdd_eq5(l, n, logq, std_s): #how to the two functions compar
         f2 = eq8(x[0], x[1])
         return f1, f2
 
-    std_e_solution, beta_solution = fsolve(system_bdd_std_e, [std_e_initial_guess, beta_initial_guess], full_output = False)
+    std_e_solution, beta_solution = fsolve(system_bdd_std_e, [std_e_initial_guess, beta_initial_guess], maxfev = 10**6,full_output = False)
+
     # d_lwe = LWE.primal_bdd(LWE.Parameters(n, 2 ** logq, ND.UniformMod(2), ND.DiscreteGaussian(std_e_solution)))["d"]
     # print("d lwe", d_lwe)
-    # print("d eq5", d_optimal(std_e_solution, beta_solution))
+    print("d eq5", d_optimal(std_e_solution, beta_solution), beta_solution, l )
     # print(" ")
     return std_e_solution
 

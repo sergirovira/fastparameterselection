@@ -14,7 +14,7 @@ from formulas import *
 from aux import *
 from numerical_solver import *
 
-sys.path.append('../lattice-estimator')
+sys.path.append('../latticeestimator')
 estimator_installed = 1
 
 import matplotlib.pyplot as plt

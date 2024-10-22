@@ -2,7 +2,7 @@ import math
 import csv
 import sys
 
-sys.path.append('../lattice-estimator')
+sys.path.append('../latticeestimator')
 
 
 try:
