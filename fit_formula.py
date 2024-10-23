@@ -47,7 +47,9 @@ simpl = 0
 
 headers = []
 data = []
-params_list = [('P0', 0.07,0), ('P1', 0.34,0), ('P2', 1,0), ('P3', 1,0), ('P4', 1,0)] #, ('P5', 1,0)]
+params_list = [('P0', 0.07, 0), ('P1', 0.34, 0), ('P2', 1,0), ('P3', 1,0), ('P4', 1,0)] #, ('P5', 1,0)]
+#'xvar', value=0.50, min=0, max=1
+
 
 verbose = 0
 
@@ -272,7 +274,7 @@ def degree_fit(params, logq, levels, e_std, s_std, std_s_num):
             if attack == 'bdd' :
                 model  = model_n_bdd(security_levels[i], logq, std_s, std_e, new_params) #, params['delta'])
             if attack == 'usvp':
-                model  = model_n_usvp(security_levels[i], logq, new_params) #, params['delta'])
+                model  = model_n_usvp(security_levels[i], logq, std_s, std_e, new_params) #, params['delta'])
 
         if param == 'n' and simpl == '1':
             if attack == 'bdd' :
@@ -482,7 +484,7 @@ def plot_points_est(param, points_atk, points_est, points_secret_dist, fit_resul
                 model = model_n_bdd_s(level,  modelQ, fit_results) #,delta)
                 model_error = model_n_bdd_s(level,  logQ, fit_results) #,delta)
             if attack == 'usvp' and simpl == '0': 
-                model = model_n_usvp(level,  modelQ, fit_results) #,delta)
+                model = model_n_usvp(level,  modelQ, std_s, std_e, fit_results) #,delta)
                 model_error = model_n_usvp(level,  logQ, fit_results) #,delta)
             if attack == 'usvp' and simpl == '1': 
                 model = model_n_usvp_s(level,  modelQ, fit_results) #,delta)
@@ -757,7 +759,7 @@ def main(argv):
     params = lmfit.Parameters()
 
     for p in params_list:
-        params.add(p[0],value = p[1])
+        params.add(p[0],value = p[1], min = p[2])
 
     est_dict = {}
 

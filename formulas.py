@@ -97,6 +97,8 @@ def predicted_beta_bdd(params):
     lnq = math.log(q)
 
     beta_approx1 = 2*n/lnq*(math.log(n/(lnq))) #very rough approximation
+    #we are assuming that n > lnq
+    #print("beta approx", beta_approx1, "log(n/lnq)", math.log(n/(lnq)), "n/lnq", n/lnq, "n", n, "lnq", lnq)
 
     A = 2*n*lnq
     B = 2*(lnq - math.log(sigma*math.sqrt(const)))+math.log(beta_approx1/const)
@@ -172,7 +174,6 @@ def model_lambda_bdd(d, logq, std_s, std_e, std_s_num, params):
 # Eq. (20)
 def model_lambda_bdd_s(d, logq, params):
     lnq = np.multiply(logq, ln2)
-
     return np.multiply(np.divide(params[0] * d, lnq), 
                        np.log(params[1] * d / lnq)) + np.multiply(params[2], np.log(d)) + params[3]
 
@@ -183,23 +184,35 @@ def model_n_bdd(l, logq, std_s, std_e, params):
     lnq = np.multiply(logq, ln2)
     n = l
 
-    A = 2*lnq
-    B = beta_approx
-    C = np.log(beta_approx/const)
-    D = lnq - np.log(zeta)
-    E = 2*np.log(sigma*np.sqrt(const))
+    A = params[0]*2*lnq
+    B = params[1]*beta_approx
+    C = params[2]*np.log(beta_approx/const)
+    D = params[3]*(lnq - np.log(zeta))
+    E = params[4]*(2*np.log(sigma*np.sqrt(const)))
 
     denom = C*(A+2*D)**2
     nom = A*B*(A+C-E)**2
+
     return nom/denom
 
 # Eq. (21)
-def model_n_usvp(l, logq, params):
+def model_n_usvp_s(l, logq, params):
     lnq = np.multiply(logq, ln2)
     return np.multiply(np.divide(l + params[0] * np.log(lnq), params[1] * np.log(l) + params[2]) + params[3], lnq)
 
-def model_n_usvp_s(l, logq, params):
-    return "Not defined"
+def model_n_usvp(l, logq, std_s, std_e, params):
+    beta_approx = l/0.292
+
+    sigma = std_e
+
+    chi = std_e/std_s
+    lnq = np.multiply(logq, ln2)
+
+    num   = (0.5*np.log(beta_approx)+lnq-np.log(const*sigma)+params[0])**2
+    denom = 2*(np.log(beta_approx/const+params[1] )*(lnq-np.log(chi)))
+    leading_order = (beta_approx*params[2] )*num / denom 
+
+    return leading_order
 
 # Eq. (22)
 def model_n_bdd_s(l, logq, std_s, std_e, params):
