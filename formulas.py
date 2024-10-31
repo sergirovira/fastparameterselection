@@ -210,9 +210,9 @@ def model_n_usvp(l, logq, std_s, std_e, params):
 
     num   = (0.5*np.log(beta_approx)+lnq-np.log(const*sigma)+params[0])**2
     denom = 2*(np.log(beta_approx/const+params[1] )*(lnq-np.log(chi)))
-    leading_order = (beta_approx*params[2] )*num / denom 
+    leading_order = (beta_approx*params[2] )*num / denom
 
-    return leading_order
+    return leading_order 
 
 # Eq. (22)
 def model_n_bdd_s(l, logq, std_s, std_e, params):

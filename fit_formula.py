@@ -1,6 +1,12 @@
+#Remark: we allow the user the input any standard deviation for the error. By default, we set it to 3.19 as it is
+#the standard in most FHE schemes today. We also provide a database of points obtained from the lattice estimator 
+#setting the standard deviation to 3.19. This means that if the user inputs another standard deviation different than 
+#3.19 he/she should also provide the points with the new standard deviation. 
+
 #!/usr/bin/env python3
 import sys
 sys.path.append('../lattice-estimator')
+
 
 from estimator import *
 
@@ -44,10 +50,15 @@ std_e = 3.19
 secret_q = 2
 ntru_flag = False
 simpl = 0
+ymin = 1000
+ymax = 2050
+xmin = 20
+xmax = 65
+degrees = []
 
 headers = []
 data = []
-params_list = [('P0', 0.07, 0), ('P1', 0.34, 0), ('P2', 1,0), ('P3', 1,0), ('P4', 1,0)] #, ('P5', 1,0)]
+params_list = [('P0', 0.07, '-inf'), ('P1', 0.34, 0), ('P2', 1, '-inf'), ('P3', 1, '-inf'), ('P4', 1, '-inf')] #, ('P5', 1,0)]
 #'xvar', value=0.50, min=0, max=1
 
 
@@ -272,13 +283,13 @@ def degree_fit(params, logq, levels, e_std, s_std, std_s_num):
 
         if param == 'n' and simpl == '0':
             if attack == 'bdd' :
-                model  = model_n_bdd(security_levels[i], logq, std_s, std_e, new_params) #, params['delta'])
+                model  = model_n_bdd(security_levels[i], logq, s_std, e_std, new_params) #, params['delta'])
             if attack == 'usvp':
-                model  = model_n_usvp(security_levels[i], logq, std_s, std_e, new_params) #, params['delta'])
+                model  = model_n_usvp(security_levels[i], logq, s_std, e_std, new_params) #, params['delta'])
 
         if param == 'n' and simpl == '1':
             if attack == 'bdd' :
-                model  = model_n_bdd_s(security_levels[i], logq, std_s, std_e, new_params) #, params['delta'])
+                model  = model_n_bdd_s(security_levels[i], logq, s_std, e_std, new_params) #, params['delta'])
             if attack == 'usvp':
                 model  = model_n_usvp_s(security_levels[i], logq, new_params) #, params['delta'])
 
@@ -382,6 +393,8 @@ def plot_points_est(param, points_atk, points_est, points_secret_dist, fit_resul
 
     fig.gca().set_ylabel(r'$d$')
     fig.gca().set_xlabel(r'$\log q$')
+
+    print("ymin", ymin, "ymax", ymax, "xmin", xmin, "xmax", xmax)
     
     plt.ylim(ymin,ymax)
     plt.xlim(xmin,xmax)
@@ -483,9 +496,9 @@ def plot_points_est(param, points_atk, points_est, points_secret_dist, fit_resul
             if attack == 'bdd' and simpl == '1':
                 model = model_n_bdd_s(level,  modelQ, fit_results) #,delta)
                 model_error = model_n_bdd_s(level,  logQ, fit_results) #,delta)
-            if attack == 'usvp' and simpl == '0': 
+            if attack == 'usvp' and simpl == '0':
                 model = model_n_usvp(level,  modelQ, std_s, std_e, fit_results) #,delta)
-                model_error = model_n_usvp(level,  logQ, fit_results) #,delta)
+                model_error = model_n_usvp(level,  logQ, std_s, std_e, fit_results) #,delta)
             if attack == 'usvp' and simpl == '1': 
                 model = model_n_usvp_s(level,  modelQ, fit_results) #,delta)
                 model_error = model_n_usvp_s(level,  logQ, fit_results) #,delta)
@@ -552,9 +565,11 @@ def plot_points_est(param, points_atk, points_est, points_secret_dist, fit_resul
 
     plt.show()
 
-def filter_points(d_estimates):
+def filter_points(d_estimates): #Todo, check for strange points?
 
     d_estimates_filtered = []
+
+    if verbose: print("d_estimates unfiltered: ", d_estimates)
 
     for d in d_estimates:
 
@@ -563,7 +578,9 @@ def filter_points(d_estimates):
         filtered_list = [tup for i, tup in enumerate(d) if i == 0 or (tup[0] != d[i-1][0] or tup[1] > d[i-1][1])]
         filtered_list2 = [tup for i, tup in enumerate(filtered_list) if i == 0 or tup[1] != filtered_list[i-1][1]]
 
+        print(len(filtered_list2))
         d_estimates_filtered.append(filtered_list2)
+
 
     return d_estimates_filtered
 
@@ -590,12 +607,16 @@ def main(argv):
     global attack
     global logQ
     global degrees
+    global xmin
+    global xmax
+    global ymin
+    global ymax
     
     # argv = sys.argv[1:]
    
     # opts, args = getopt.getopt(argv,"hb",["xmin=","xmax=","ymin=","ymax=", "yminbound=", "bound=","levels=", "attack=", "dist=", "param=", "simpl="])
 
-    verbose = 0
+    verbose = 1
 
     # for opt in opts:
     #     if opt[0] == '-h':
@@ -683,11 +704,23 @@ def main(argv):
         else:
             degrees = list(range(2**10,2**15,2**2))
             logQ = list(range(10,200)) + list(range(200,500, 10)) + list(range(500,1000,10)) + list(range(1000,1600,50))
-            ymin = 15000
-            ymax = 32390
-            xmin = 400
-            xmax = 1400
-            name_file = 'data_ternary.pkl'
+            #degrees = range(2**10, 2**12, 2**2)
+            #logQ = list(range(10,100))
+            #ymin = 15000
+            #ymax = 32390
+            ymin = 1024
+            ymax = 2048
+            #xmin = 400
+            #xmax = 1400
+            xmin = 10
+            xmax = 90
+            if attack == 'bdd':
+                name_file = 'data_ternary_bdd.pkl'
+            elif attack == 'usvp':
+                name_file = 'data_ternary_usvp.pkl'
+            else:
+                print("Attack " + attack + " not considered")
+                exit(1) 
 
     if param == "lambda":
         if secret == "binary":
@@ -712,7 +745,13 @@ def main(argv):
             ymax = 256
             xmin = 20
             xmax = 1400
-            name_file = 'data_ternary.pkl'
+            if attack == 'bdd':
+                name_file = 'data_ternary_bdd.pkl'
+            elif attack == 'usvp':
+                name_file = 'data_ternary_usvp.pkl'
+            else:
+                print("Attack " + attack + " not considered")
+                exit(1) 
         if secret == "tfhe":
             #degrees = [1517, 1567, 1493, 1476, 1542, 1443, 1418, 1369, 1394, 1336, 1319, 1262, 1287, 1237, 1212, 1163, 1517, 1567, 1493, 1476, 1542, 1443, 1418, 1369, 1394, 1336, 1319, 1262, 1287, 1237, 1212, 1163, 1188, 1138, 1113, 1089, 1015, 1064, 990, 1039, 965, 916, 940, 891, 866, 841, 767, 817, 742, 792, 718, 668, 643, 693, 619, 594, 520, 569, 495, 545, 429, 470, 404, 446, 379, 355, 313, 330, 288, 264, 239, 190, 214]
             degrees = [1517, 1567, 1493, 1476, 1542, 2087, 2163, 2061, 2121, 2020]
@@ -759,7 +798,10 @@ def main(argv):
     params = lmfit.Parameters()
 
     for p in params_list:
-        params.add(p[0],value = p[1], min = p[2])
+        if p[2] != '-inf':
+            params.add(p[0],value = p[1], min = p[2])
+        else:
+            params.add(p[0],value = p[1])
 
     est_dict = {}
 
@@ -832,7 +874,7 @@ def main(argv):
         exit(0)
         #model_lambda_bdd(level,  modelQ, points_secret_dist[i], fit_results)
 
-    #plot_points_est(param, points_atk, points_est, points_secret_dist, results, std_s, std_e)
+    plot_points_est(param, points_atk, points_est, points_secret_dist, results, std_s, std_e)
 
     #s = param + attack + str(simpl) + secret
 
