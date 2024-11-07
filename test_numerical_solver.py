@@ -35,11 +35,9 @@ def _delta(beta):
         return beta / (2 * PI * e) * (PI * beta) ** (1 / beta) ** (1 / (2 * (beta - 1)))
 
 def compute_d(beta, n, lnq):
-
     num   = 2*n*lnq
     denom = log(_delta(beta))
     return min(2*n, sqrt(num/denom))
-
 
 
 def eq5(n, lnq, std_e, std_s, beta, d_opt):
@@ -77,16 +75,26 @@ std_s = Xs.stddev
 
 
 lambdas = [80, 128, 192, 256]
-#nlogs = [6, 7, 8, 9, 10, 11, 12, 13]
 nlogs = [10, 11, 12, 13]
+#lambdas = [80]
+#nlogs = [10]
+
 logqs = [32, 64]
 for l in lambdas:
     for nlog in nlogs:
         for logq in logqs:
             #res = numerical_std_e_bdd_eq5(l, 2**nlog, logq, std_s)
-            res = numerical_std_e_bdd_ln(l, 2**nlog, logq, std_s)
-            if res==-1: continue
+            #res = numerical_std_e_bdd_ln(l, 2**nlog, logq, std_s)
+            res = numerical_std_e_bdd_eta(l, 2**nlog, logq, std_s)
+            if res==-1:
+                print("------------------------------")
+                continue
             #print(f"lambda:{l} n:{2**nlog} q:{logq } std_e: {res}")
+            #print(res, 10**(-5), res<10**(-5))
+            if res<1e-19:
+                print(f"{l, nlog, logq} too small st. deviation, continue...")
+                print("------------------------------")
+                continue
 
             FHEParam = LWEParameters(
                 n=2**nlog,
@@ -94,6 +102,7 @@ for l in lambdas:
                 Xs=NoiseDistribution.UniformMod(2),
                 Xe=NoiseDistribution.DiscreteGaussian(stddev=res),
             )
+
             try:
                 primal_bdd_cost = LWE.primal_bdd(FHEParam, red_cost_model=RC.BDGL16) #RC.BDGL16, RC.MATZOV
                 d    = primal_bdd_cost['d']
@@ -106,9 +115,9 @@ for l in lambdas:
             lnq = logq * ln2
             #for std_es in range(2**8, 2**13, 500):
                 #checking eq(5) for all given values
-            check_d, check_beta = eq5(2**nlog,lnq, res ,std_s, beta, d)
+            #check_d, check_beta = eq5(2**nlog,lnq, res ,std_s, beta, d)
             #check_d, check_beta = eq5(2**nlog,lnq, res ,std_s, 262, 1890)
-            print(f"lambda:{l} n:{2**nlog} logq:{logq } std_e: {res} eta: {eta} beta:{beta} lambda:{ll} check_beta: {check_beta} d:{d} check_d: {check_d}")
+            print(f"lambda:{l} n:{2**nlog} logq:{logq } std_e: {res} eta: {eta} beta:{beta} lambda:{ll} d:{d} ")
             print("------------------------------")
             #assert(False)
 

@@ -18,6 +18,32 @@ import matplotlib.pyplot as plt
 
 const = 2 * pi * exp(1)
 ln2 = log(2)
+e = exp(1)
+
+def _delta(beta):
+    small = (
+        (2, 1.02190),
+        (5, 1.01862),
+        (10, 1.01616),
+        (15, 1.01485),
+        (20, 1.01420),
+        (25, 1.01342),
+        (28, 1.01331),
+        (40, 1.01295),
+    )
+
+    # if beta <= 2:
+    #     return 1.0219
+    # elif beta < 40:
+    #     for i in range(1, len(small)):
+    #         if small[i][0] > beta:
+    #             return small[i - 1][1]
+    # elif beta == 40:
+    #     return small[-1][1]
+    # else:
+    return (beta / (2 * pi * e) * (pi * beta) ** (1 / beta)) ** (1 / (2 * (beta - 1)))
+
+
 
 def numerical_lambda_bdd(n, logq, std_s, std_e):
     lnq = logq * ln2
@@ -193,8 +219,11 @@ def numerical_std_e_bdd_ln(l, n, logq, std_s):
 
     # find beta numerically
     beta_initial_guess = (l - 16.4) / 0.292
-    d_optimal = lambda beta : sqrt(2 * n * lnq * beta / log(beta / const))
+    #d_optimal = lambda beta : sqrt(2 * n * lnq * beta / log(beta / const))
+    d_optimal = lambda beta : sqrt(2 * n * lnq / log(_delta(beta)))
     eq8 = lambda beta : l - (0.292 * beta + log2(8 * d_optimal(beta)) + 16.4)
+
+    print(d_optimal(beta_initial_guess))
 
     beta_solution = fsolve(eq8, beta_initial_guess, full_output = False)
 
@@ -213,6 +242,8 @@ def numerical_std_e_bdd_ln(l, n, logq, std_s):
 
     std_e_solution = fsolve(eq6, std_e_initial_guess, full_output = True)
 
+    print(std_e_solution[0][0], eq6(std_e_solution[0][0]))
+
     if not std_e_solution[2]==1:
         print(std_e_solution[3])
         return -1
@@ -221,6 +252,41 @@ def numerical_std_e_bdd_ln(l, n, logq, std_s):
     #print(std_e_initial_guess, eq6(std_e_initial_guess), eq6(std_e_solution[0][0]),  std_e_solution[0][0])
     #print(std_e_solution)
 
+    return exp(std_e_solution[0][0])
+
+def numerical_std_e_bdd_eta(l, n, logq, std_s):
+    eta_initial_guess = (l - 16.4) / 0.292
+    eta_eq = lambda eta : l - (0.292*eta+log(8*eta)+16.4)
+    eta_solution = fsolve(eta_eq, eta_initial_guess, full_output = False)
+
+    lnq = logq * ln2
+    d_optimal = lambda beta : sqrt(n * lnq / log(_delta(beta)))
+    eq8 = lambda beta : l - (0.292 * beta + log2(8 * d_optimal(beta)) + 16.4)
+
+    beta_solution = fsolve(eq8, eta_solution, full_output = False)
+    d = d_optimal(beta_solution), n
+    eta = eta_solution[0]
+    beta = beta_solution[0]
+    d = max(d[0], n)
+    #print(eta, beta, d)
+
+    std_e_initial_guess = 5.502177429822036#0.001
+    zeta = lambda ln_std_e : max(0, ln_std_e-log(std_s))
+    eq_for_sigmae = lambda ln_std_e: eta - d + 1/log(_delta(beta)) * (lnq - ln_std_e - 0.5*log(const) -n/d*(lnq - zeta(ln_std_e) ) )
+    std_e_solution = fsolve(eq_for_sigmae, std_e_initial_guess, full_output = True)
+
+
+    #sigma_e_explicit = (d - eta - 1/log(_delta(beta))*(lnq - 0.5*log(const) - n/d*(lnq+log(std_s))))/(1/log(_delta(beta))*(n/d-1))
+    #sigma_e_explicit2 = (eta + 1/log(_delta(beta))*(lnq - 0.5*log(const) - n*lnq/d) - d)/(1/log(_delta(beta)))
+    #print('ln_sigma_e_explicit:', sigma_e_explicit, 'ln_sigma_e_explicit2:', sigma_e_explicit2)
+
+    #nom = eta + 1/log(_delta(beta))*(lnq - 0.5*log(const) - n*lnq/d) - d
+    #print(std_e_solution[0][0], eq_for_sigmae(std_e_solution[0][0]), nom)
+
+    if not std_e_solution[2]==1:
+        print(std_e_solution[3])
+    #   return -1
+    #print(exp(std_e_solution[0][0]))
     return exp(std_e_solution[0][0])
 
 
