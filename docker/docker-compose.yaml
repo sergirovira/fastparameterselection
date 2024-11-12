@@ -1,0 +1,15 @@
+services:
+  python-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ../src:/app/src
+      - ../examples:/app/examples
+    working_dir: /app/src
+    command: [ "sage", "--python3", "estimate.py", "--param", "lambda",  "--n", "1024", "--logq", "35", "--secret", "binary", "--error", "3.19", "--verify", "1" ]
+#    command: ["sage", "--python3", "estimate.py", "--param", "n",  "--lambda", "80", "--logq", "20", "--secret", "binary", "--error", "3.19"]
+#    command: ["sage", "--python3", "estimate.py", "--param", "logq",  "--lambda", "80", "--n", "1024", "--secret", "binary", "--error", "3.19"]
+#    command: ["sage", "--python3", "estimate.py", "--param", "std_e",  "--lambda", "80", "--n", "1024", "--secret", "binary", "--error", "3.19"]
+#    command: ["sage", "--python3", "estimate.py", "--param", "lambda", "--file", "../examples/example_lambda_binary.csv", "--verify", "1"]
+#    command: ["sage", "--python3", "estimate.py", "--param", "n", "--file", "../examples/example_n_ternary.csv"]
