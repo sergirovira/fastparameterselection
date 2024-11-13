@@ -58,7 +58,8 @@ def main(argv):
                 std_s = UniformModStd(2)
                 secret_q = 2
                 output_dict['std_s'] = 0.5
-            elif secret == 'ternary':mo                std_s = UniformModStd(3)
+            elif secret == 'ternary': 
+                std_s = UniformModStd(3)
                 secret_q = 3
                 output_dict['std_s'] = math.sqrt(2./3)
             else: 
@@ -104,7 +105,10 @@ def main(argv):
         n_usvp_s = n_usvp_s_ter
         n_bdd_s = n_bdd_s_ter
 
+    #parameters = LWE.Parameters(lwe_d, 2 ** logq[0], ND.UniformMod(secret_q), ND.DiscreteGaussian(2**std_e))
+    #print(LWE.primal_usvp(parameters))
 
+    #exit(0)
 
     # If we select to run the formulas for the LWE dimension, we get an output of the following form:
     #

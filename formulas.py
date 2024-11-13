@@ -87,12 +87,7 @@ def check_overstreched(params):
 
     return -1
 
-def predicted_beta_bdd(params):
-
-    n = params.n
-    sigma = params.Xe.stddev
-    q = params.q
-    zeta = params.Xe.stddev / params.Xs.stddev
+def predicted_beta_bdd(n, q, sigma, zeta):
 
     lnq = math.log(q)
 
@@ -158,11 +153,9 @@ def model_lambda_bdd(d, logq, std_s, std_e, std_s_num, params):
 
     if isinstance(logq, list):
         for lq in logq:
-            params_est = LWE.Parameters(d, 2 ** lq, ND.UniformMod(std_s_num), ND.DiscreteGaussian(std_e))
-            beta.append(predicted_beta_bdd(params_est))
+            beta.append(predicted_beta_bdd(d, 2 ** lq, std_e, std_e/std_s))
     else:
-        params_est = LWE.Parameters(d, 2 ** logq, ND.UniformMod(std_s_num), ND.DiscreteGaussian(std_e))
-        beta.append(predicted_beta_bdd(params_est))
+        beta.append(predicted_beta_bdd(d, 2 ** logq, std_e, std_e/std_s))
 
     # Intermediate calculations
     log_delta = np.log(beta) / (np.multiply(2, beta))
