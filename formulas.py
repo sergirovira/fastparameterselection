@@ -170,22 +170,43 @@ def model_lambda_bdd_s(d, logq, params):
     return np.multiply(np.divide(params[0] * d, lnq), 
                        np.log(params[1] * d / lnq)) + np.multiply(params[2], np.log(d)) + params[3]
 
+#old code, placeholder parameters
+# def model_n_bdd(l, logq, std_s, std_e, params):
+#     sigma = std_e
+#     zeta = std_e / std_s
+#     beta_approx = (l - np.log(100*l) - 16.4)/0.292 #approximate beta from lambda
+#     lnq = np.multiply(logq, ln2)
+#     n = l
+
+#     A = params[0]*2*lnq
+#     B = params[1]*beta_approx
+#     C = params[2]*np.log(beta_approx/const)
+#     D = params[3]*(lnq - np.log(zeta))
+#     E = params[4]*(2*np.log(sigma*np.sqrt(const)))
+
+#     denom = C*(A+2*D)**2
+#     nom = A*B*(A+C-E)**2
+
+#     return nom/denom
+
+#Eq. (24)
 def model_n_bdd(l, logq, std_s, std_e, params):
     sigma = std_e
     zeta = std_e / std_s
-    beta_approx = (l - np.log(100*l) - 16.4)/0.292 #approximate beta from lambda
+    beta_approx = (l - np.log(l))/0.292 #approximate beta from lambda
+    #print(beta_approx.n(), beta)
     lnq = np.multiply(logq, ln2)
     n = l
 
-    A = params[0]*2*lnq
-    B = params[1]*beta_approx
-    C = params[2]*np.log(beta_approx/const)
-    D = params[3]*(lnq - np.log(zeta))
-    E = params[4]*(2*np.log(sigma*np.sqrt(const)))
+    A = 2*lnq
+    B = beta_approx
+    C = np.log(beta_approx/const)
+    D = lnq - np.log(zeta)
+    E = 2*np.log(sigma*np.sqrt(const))
 
-    denom = C*(A+2*D)**2
-    nom = A*B*(A+C-E)**2
-
+    denom = (C + params[3])*(A+2*D)**2
+    nom = (params[0] * B+ params[1])*(A + C + params[3])**2
+    #print(nom.n()/denom.n())
     return nom/denom
 
 # Eq. (21)

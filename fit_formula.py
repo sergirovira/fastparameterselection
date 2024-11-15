@@ -571,7 +571,7 @@ def filter_points(d_estimates): #Todo, check for strange points?
 
     if verbose: print("d_estimates unfiltered: ", d_estimates)
 
-    for d in d_estimates:
+    for d in d_estimates[1:]:
 
         d = sorted(d, key=lambda tup: (tup[0], -tup[1]))
 

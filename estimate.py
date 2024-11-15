@@ -95,14 +95,18 @@ def main(argv):
         lambda_usvp_s = lambda_usvp_s_bin
         lambda_bdd = lambda_bdd_bin
         lambda_bdd_s = lambda_bdd_s_bin
+        n_usvp = n_usvp_bin
         n_usvp_s = n_usvp_s_bin
+        n_bdd = n_bdd_bin
         n_bdd_s = n_bdd_s_bin
     else:
         lambda_usvp = lambda_usvp_ter
         lambda_usvp_s = lambda_usvp_s_ter
         lambda_bdd = lambda_bdd_ter
         lambda_bdd_s = lambda_bdd_s_ter
+        n_usvp = n_usvp_ter
         n_usvp_s = n_usvp_s_ter
+        n_bdd = n_bdd_ter
         n_bdd_s = n_bdd_s_ter
 
     #parameters = LWE.Parameters(lwe_d, 2 ** logq[0], ND.UniformMod(secret_q), ND.DiscreteGaussian(2**std_e))
@@ -123,10 +127,10 @@ def main(argv):
 
     if param == 'n':
         
-        if(verify):
-            headers = ["Secret dist.", "lambda", "log q", "usvp_s (Eq. 21)", "lwe est", "usvp_s pow2", "lwe est", "bdd_s (Eq. 22)", "lwe est", "bdd_s pow2", "lwe est"]
+        if(verify and estimator_installed):
+            headers = ["Secret dist.", "lambda", "log q", "usvp", "lwe_est", "usvp pow2", "lwe_est", "usvp_s (Eq. 21)", "lwe est", "usvp_s pow2", "lwe est", "bdd", "lwe_est", "bdd pow2", "lwe_est", "bdd_s (Eq. 22)", "lwe est", "bdd_s pow2", "lwe est"]
         else:
-            headers = ["Secret dist.", "lambda", "log q", "usvp_s (Eq. 21)", "usvp_s pow2", "usvp_s num", "bdd", "bdd pow2", "bdd_s (Eq. 22)", "bdd_s pow2", "bdd_s num"]
+            headers = ["Secret dist.", "lambda", "log q", "usvp", "usvp pow2", "usvp_s (Eq. 21)", "usvp_s pow2", "usvp_s num", "bdd", "bdd pow2", "bdd_s (Eq. 22)", "bdd_s pow2", "bdd_s num"]
 
         helper_headers(headers)
 
@@ -150,21 +154,24 @@ def main(argv):
                 output_dict['n'] = min(est_usvp, est_usvp_pow, est_bdd, est_bdd_pow)  #take min for a more conservative overstretchness estimation
         else:
             for lq in logq:
-                est_usvp = int(math.ceil(model_n_usvp(l, lq, n_usvp_s)))
-                est_bdd = int(math.ceil(model_n_bdd(l, lq,  std_s, std_e, n_bdd_s))) #n_bdd_s is just a placeholder here
+                est_usvp_s = int(math.ceil(model_n_usvp_s(l, lq, n_usvp_s)))
+                est_usvp = int(math.ceil(model_n_usvp(l, lq, std_s, std_e, n_usvp)))
+                est_bdd = int(math.ceil(model_n_bdd(l, lq,  std_s, std_e, n_bdd))) #n_bdd_s is just a placeholder here
                 est_bdd_s = int(math.ceil(model_n_bdd_s(l, lq,  std_s, std_e, n_bdd_s)))
                 est_usvp_pow = closest_power_of_2(est_usvp)
+                est_usvp_s_pow = closest_power_of_2(est_usvp_s)
                 est_bdd_pow = closest_power_of_2(est_bdd)
                 est_bdd_s_pow = closest_power_of_2(est_bdd_s)
                 est_usvp_numerical = int(math.ceil(numerical_n_usvp(est_usvp, lq,  std_s, std_e)))
                 est_bdd_numerical = int(math.ceil(numerical_n_bdd(est_bdd, lq,  std_s, std_e)))
 
                 if(verify and estimator_installed):
+                    lwe_usvp_s, lwe_bdd_s, lwe_usvp_s_pow, lwe_bdd_s_pow = run_verification(lq,secret,est_usvp_s,est_bdd_s,est_usvp_s_pow,est_bdd_s_pow)
                     lwe_usvp, lwe_bdd, lwe_usvp_pow, lwe_bdd_pow = run_verification(lq,secret,est_usvp,est_bdd,est_usvp_pow,est_bdd_pow)
-                    data_point = [secret, l, lq, est_usvp, lwe_usvp, est_usvp_pow, lwe_usvp_pow, est_bdd, lwe_bdd, est_bdd_pow, lwe_bdd_pow]
+                    data_point = [secret, l, lq, est_usvp, lwe_usvp, est_usvp_pow, lwe_usvp_pow, est_usvp_s, lwe_usvp_s, est_usvp_s_pow, lwe_usvp_s_pow, est_bdd, lwe_bdd, est_bdd_pow, lwe_bdd_pow, est_bdd_s, lwe_bdd_s, est_bdd_s_pow, lwe_bdd_s_pow]
 
                 else:
-                    data_point = [secret, l, lq, est_usvp, est_usvp_pow, est_usvp_numerical, est_bdd, est_bdd_pow, est_bdd_s, est_bdd_s_pow, est_bdd_numerical]
+                    data_point = [secret, l, lq, est_usvp, est_usvp_pow, est_usvp_s, est_usvp_s_pow, est_usvp_numerical, est_bdd, est_bdd_pow, est_bdd_s, est_bdd_s_pow, est_bdd_numerical]
 
                 data.append(data_point)
                 output_dict['n'] = min(est_usvp, est_usvp_pow, est_bdd, est_bdd_pow, est_usvp_numerical, est_bdd_numerical)  #take min for a more conservative overstretchness estimation
@@ -172,7 +179,7 @@ def main(argv):
 
     elif param == 'logq':
         
-        if(verify):
+        if(verify and estimator_installed):
             headers = ["Secret dist.", "lambda", "n", "logq usvp", "logq bdd", "lwe est"]
         else:
             headers = ["Secret dist.", "lambda", "n", "logq usvp", "logq bdd"]
@@ -210,7 +217,7 @@ def main(argv):
                 data.append(data_point)
                 output_dict['logq'] = max(est_usvp_numerical, est_bdd_numerical)
     elif param == 'std_e':
-        if(verify):
+        if(verify and estimator_installed):
             headers = ["Secret dist.", "lambda", "n", "logq", "std_e bdd", "lwe est"]
         else:
             headers = ["Secret dist.", "lambda", "n", "logq", "std_e usvp", "std_e bdd"]
@@ -263,7 +270,7 @@ def main(argv):
 
 
     elif param == 'lambda':
-        if(verify):
+        if(verify and estimator_installed):
             headers = ["Secret dist.", "LWE dim.", "log q", "usvp (Eq. 14)", "diff", "usvp_s (Eq. 16)", "diff", "bdd (Eq. 17)", "diff", "bdd_s (Eq. 20)", "diff", "Estimator"]
         else:
             headers = ["Secret dist.", "LWE dim.", "log q", "usvp (Eq. 14)", "usvp_s (Eq. 16)", "bdd (Eq. 17)", "bdd_s (Eq. 20)"]
