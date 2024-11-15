@@ -313,21 +313,23 @@ def main(argv):
                 data.append(data_point)
                 #output_dict['lambda'] = min(est_usvp, est_usvp_s, est_bdd, est_bdd_s)
 
+    elif param == "est":
+        print("test")
+        for lq in logq:
+            parameters = LWE.Parameters(lwe_d, 2 ** lq, ND.UniformMod(secret_q), ND.DiscreteGaussian(std_e))
+            LWE.estimate(parameters)
+
     else: helper()
 
     print_table(headers,data)
+    
 
-    #check if the output parameters are in the overstretched regime
+
+        #check if the output parameters are in the overstretched regime
     if ntru_flag:
         beta_ =  check_overstreched(output_dict)
         if (beta_>0 and output_dict['lambda']>0 and (output_dict['lambda']-0.292*beta_)>20):
             print("Warning: the ntru parameters are in the overstretched regime")
-
-    
-    if param == "est":
-        for lq in logq:
-            parameters = LWE.Parameters(lwe_d, 2 ** lq, ND.UniformMod(secret_q), ND.DiscreteGaussian(std_e))
-            LWE.estimate(parameters)
 
     
     print("\n")
