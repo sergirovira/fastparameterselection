@@ -18,7 +18,7 @@ sys.path.append('../lattice-estimator')
 estimator_installed = 1
 
 try:
-    from estimator2 import *
+    from estimator import *
 except ImportError:
     print("Warning: Failed to import lattice_estimator, some options will not work")
     estimator_installed = 0
