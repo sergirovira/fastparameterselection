@@ -112,7 +112,7 @@ def main(argv):
 
     if param == 'n':
         
-        if(verify):
+        if(verify and estimator_installed):
             headers = ["Secret dist.", "lambda", "log q", "usvp_s (Eq. 21)", "lwe est", "usvp_s pow2", "lwe est", "bdd_s (Eq. 22)", "lwe est", "bdd_s pow2", "lwe est"]
         else:
             headers = ["Secret dist.", "lambda", "log q", "usvp_s (Eq. 21)", "usvp_s pow2", "usvp_s num", "bdd", "bdd pow2", "bdd_s (Eq. 22)", "bdd_s pow2", "bdd_s num"]
@@ -161,7 +161,7 @@ def main(argv):
 
     elif param == 'logq':
         
-        if(verify):
+        if(verify and estimator_installed):
             headers = ["Secret dist.", "lambda", "n", "logq usvp", "logq bdd", "lwe est"]
         else:
             headers = ["Secret dist.", "lambda", "n", "logq usvp", "logq bdd"]
@@ -199,7 +199,7 @@ def main(argv):
                 data.append(data_point)
                 output_dict['logq'] = max(est_usvp_numerical, est_bdd_numerical)
     elif param == 'std_e':
-        if(verify):
+        if(verify and estimator_installed):
             headers = ["Secret dist.", "lambda", "n", "logq", "std_e bdd", "lwe est"]
         else:
             headers = ["Secret dist.", "lambda", "n", "logq", "std_e usvp", "std_e bdd"]
@@ -252,7 +252,7 @@ def main(argv):
 
 
     elif param == 'lambda':
-        if(verify):
+        if(verify and estimator_installed):
             headers = ["Secret dist.", "LWE dim.", "log q", "usvp (Eq. 14)", "diff", "usvp_s (Eq. 16)", "diff", "bdd (Eq. 17)", "diff", "bdd_s (Eq. 20)", "diff", "Estimator"]
         else:
             headers = ["Secret dist.", "LWE dim.", "log q", "usvp (Eq. 14)", "usvp_s (Eq. 16)", "bdd (Eq. 17)", "bdd_s (Eq. 20)"]
