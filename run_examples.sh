@@ -12,5 +12,9 @@ python3 src/estimate.py --param "n" --file "example_n_ternary.csv"
 
 python3 src/estimate.py --param "logq" --lambda "80" --n "1024" --secret "binary" --error "3.19"
 
+python3 src/estimate.py --param "logq" --file "example_logq_binary.csv"
+
 python3 src/estimate.py --param "std_e" --lambda "80" --n "1024" --logq "20" --secret "binary"
+
+python3 src/estimate.py --param "std_e" --file "example_error_binary.csv"
 
