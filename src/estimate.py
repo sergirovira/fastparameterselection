@@ -226,8 +226,8 @@ def main(argv):
         else:
 
             for lq in logq:
-                est_usvp_numerical = numerical_std_e_usvp(lwe_d, lq, std_s)
-                est_bdd_numerical = numerical_std_e_bdd(lwe_d, lq, std_s)
+                est_usvp_numerical = numerical_std_e_usvp(l, lwe_d, lq, std_s)
+                est_bdd_numerical = numerical_std_e_bdd(l, lwe_d, lq, std_s)
 
                 if(verify and estimator_installed):
                     lwe_parameters_bdd = LWE.Parameters(lwe_d, 2 ** lq, ND.UniformMod(secret_q), ND.DiscreteGaussian(est_bdd_numerical))
@@ -235,6 +235,7 @@ def main(argv):
                     data_point = [secret, l, lwe_d, lq, est_bdd_numerical,lwe_bdd]
                 else:
                     data_point = [secret, l, lwe_d, lq, est_usvp_numerical, est_bdd_numerical]
+                data.append(data_point)
                 output_dict['std_e'] = min(est_usvp_numerical, est_bdd_numerical)
 
 
