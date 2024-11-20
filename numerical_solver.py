@@ -1,5 +1,6 @@
-from numpy import pi, exp, log, log2, sqrt, multiply, divide
+from numpy import pi, exp, log, log2, sqrt, multiply, divide, ceil
 from scipy.optimize import fsolve
+import scipy.special
 
 import numpy as np
 
@@ -220,7 +221,7 @@ def numerical_std_e_bdd_ln(l, n, logq, std_s):
     # find beta numerically
     beta_initial_guess = (l - 16.4) / 0.292
     #d_optimal = lambda beta : sqrt(2 * n * lnq * beta / log(beta / const))
-    d_optimal = lambda beta : sqrt(2 * n * lnq / log(_delta(beta)))
+    d_optimal = lambda beta : sqrt(n * lnq / log(_delta(beta)))
     eq8 = lambda beta : l - (0.292 * beta + log2(8 * d_optimal(beta)) + 16.4)
 
     print(d_optimal(beta_initial_guess))
@@ -264,7 +265,7 @@ def numerical_std_e_bdd_eta(l, n, logq, std_s):
     eq8 = lambda beta : l - (0.292 * beta + log2(8 * d_optimal(beta)) + 16.4)
 
     beta_solution = fsolve(eq8, eta_solution, full_output = False)
-    d = d_optimal(beta_solution), n
+    d = d_optimal(beta_solution)
     eta = eta_solution[0]
     beta = beta_solution[0]
     d = max(d[0], n)
@@ -344,3 +345,20 @@ def numerical_std_e_usvp(l, n, logq, std_s):
     
     std_e_solution, beta_solution = fsolve(system_usvp_std_e, [std_e_initial_guess, beta_initial_guess], full_output = False)
     return std_e_solution
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

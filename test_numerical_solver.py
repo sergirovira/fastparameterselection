@@ -79,25 +79,28 @@ nlogs = [10, 11, 12, 13]
 #lambdas = [80]
 #nlogs = [10]
 
-logqs = [32, 64]
-for l in lambdas:
-    for nlog in nlogs:
+lambda_tfhe = [112]
+ns = [291, 325, 351, 418]
+
+logqs = [64]
+for l in lambda_tfhe:
+    for n in ns:#nlog in nlogs:
         for logq in logqs:
             #res = numerical_std_e_bdd_eq5(l, 2**nlog, logq, std_s)
             #res = numerical_std_e_bdd_ln(l, 2**nlog, logq, std_s)
-            res = numerical_std_e_bdd_eta(l, 2**nlog, logq, std_s)
+            res = numerical_std_e_bdd_eta(l, n, logq, std_s)
             if res==-1:
                 print("------------------------------")
                 continue
             #print(f"lambda:{l} n:{2**nlog} q:{logq } std_e: {res}")
             #print(res, 10**(-5), res<10**(-5))
             if res<1e-19:
-                print(f"{l, nlog, logq} too small st. deviation, continue...")
+                print(f"{l, n, logq} too small st. deviation, continue...")
                 print("------------------------------")
                 continue
 
             FHEParam = LWEParameters(
-                n=2**nlog,
+                n= n,#2**nlog,
                 q= 2**logq,#q=2**64,
                 Xs=NoiseDistribution.UniformMod(2),
                 Xe=NoiseDistribution.DiscreteGaussian(stddev=res),
@@ -117,7 +120,7 @@ for l in lambdas:
                 #checking eq(5) for all given values
             #check_d, check_beta = eq5(2**nlog,lnq, res ,std_s, beta, d)
             #check_d, check_beta = eq5(2**nlog,lnq, res ,std_s, 262, 1890)
-            print(f"lambda:{l} n:{2**nlog} logq:{logq } std_e: {res} eta: {eta} beta:{beta} lambda:{ll} d:{d} ")
+            print(f"lambda:{l} n:{n} logq:{logq } std_e: {res} eta: {eta} beta:{beta} lambda:{ll} d:{d} ")
             print("------------------------------")
             #assert(False)
 
