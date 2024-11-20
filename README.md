@@ -6,22 +6,23 @@ This repository implements the formulas of the paper [Guidance for Efficient Sel
 
 Usage
 -----
-You can use the formulas to find an estimation of the security level by running:
+Find an estimation of the security level by running:
    ````
-  python3 estimate.py --param "lambda" --n "1024" --logq "20-30;35;40-60" --dist "ternary"
+   python3 src/estimate.py --param "lambda" --n "1024" --logq "20-30;35;40-60" --secret "binary" --error "3.19"
    ````
-  or
-  ````
-  python3 estimate.py --param "lambda" --file "example_lambda_ternary.csv"
+Find an estimation of the LWE dimension required to obtain a given security level:
  ````
-You can use the formulas to find an estimation of the LWE dimension required to obtain a given security level by running:
+ python3 src/estimate.py --param "n" --lambda "80" --logq "20-30" --secret "binary" --error "3.19"
  ````
- python3 estimate.py --param "n" --lambda "80" --logq "20-30" --dist "binary" 
+Find an estimation of the size of the modulus q:
  ````
-or 
+ python3 src/estimate.py --param "logq" --lambda "80" --n "1024" --secret "binary" --error "3.19"
  ````
- python3 estimate.py --param "n" --file "example_n_binary.csv"
+Find an estimation of the standard deviation of the error distribution:
+````
+python3 src/estimate.py --param "std_e" --lambda "80" --n "1024" --logq "20" --secret "binary" --error "3.19"
  ````
+
 Note: you can add the option ````--verify 1```` to any of the commands to compare the output of the formulas against the Lattice Estimator (see Dependencies).
 
 Dependencies
@@ -32,13 +33,48 @@ Note: At present, the Estimator is also needed to run one of the formulas, this 
 
 [Numpy](https://numpy.org/) is required.
 
-TODOs
----------
+Use with Docker
+-------
+You can build and run the repository with [Docker](...) with the command
+````
+docker-compose -f ./docker/docker-compose.yaml up --build
+````
+To only run, use
+````
+docker-compose -f ./docker/docker-compose.yaml up
+````
 
-We will address the following tasks in the upcoming weeks:
-
-- ``[ ]`` Allow the user to choose the distribution of the error. At the moment is set to 3.19 as default. 
-         
+Currently, it runs estimate.py to obtain the parameter lambda, given n = 1024, logq = 35, binary secret distribution and standard deviation of the error distribution 3.19. To run the estimation with your parameters, you can modify the command line in docker-compose.yaml as follows.
+Find an estimation of the security level:
+````
+command: [ "sage", "--python3", "estimate.py", "--param", "lambda",  "--n", "1024", "--logq", "20-30;35;40-60", "--secret", "binary", "--error", "3.19"]
+````
+Find an estimation of the security level and verify it against the Lattice Estimator:
+````
+command: [ "sage", "--python3", "estimate.py", "--param", "lambda",  "--n", "1024", "--logq", "20-30;35;40-60", "--secret", "binary", "--error", "3.19", "--verify", "1" ]
+````
+Find an estimation of the LWE dimension:
+````
+command: ["sage", "--python3", "estimate.py", "--param", "n",  "--lambda", "80", "--logq", "20", "--secret", "binary", "--error", "3.19"]
+````
+Find an estimation of the size of the modulus q:
+````
+command: ["sage", "--python3", "estimate.py", "--param", "logq",  "--lambda", "80", "--n", "1024", "--secret", "binary", "--error", "3.19"]
+````
+Find an estimation of the standard deviation of the error distribution:
+````
+command: ["sage", "--python3", "estimate.py", "--param", "std_e",  "--lambda", "80", "--n", "1024", "--secret", "binary", "--error", "3.19"]
+````
+Find an estimation of the security level, given the example parameters in example_lambda_binary.csv: 
+````
+command: ["sage", "--python3", "estimate.py", "--param", "lambda", "--file", "../examples/example_lambda_binary.csv", "--verify", "1"]
+````
+Find an estimation of the LWE dimension, given the example parameters in example_n_ternary.csv:
+````
+command: ["sage", "--python3", "estimate.py", "--param", "n", "--file", "../examples/example_n_ternary.csv"]
+````
+Note: in the Docker version, we applied a change to the [Lattice Estimator](...), to address an imprecision in the case where the standard deviation of the error distribution is much larger than 3.19.
+     
 Bugs
 ----
 
@@ -47,6 +83,22 @@ Please report bugs through the [GitHub issue tracker](https://github.com/sergiro
 Citing
 ------
 
-The paper will be presented at Africacrypt 2024, before the proceedings are published, a pre-print is available as
+The paper was presented at Africacrypt 2024:
 
-    | Cryptology ePrint Archive, Report 2024/1001, 2024. https://eprint.iacr.org/2024/1001
+ ````
+ @inproceedings{kirshanova2024guidance,
+  			title={Guidance for efficient selection of secure parameters for fully homomorphic encryption},
+  			author={Kirshanova, Elena and Marcolla, Chiara and Rovira, Sergi},
+  			booktitle={International Conference on Cryptology in Africa},
+  			pages={376--400},
+  			year={2024},
+  			organization={Springer}
+			}
+ ````
+  
+  			
+A pre-print is available as
+	 
+	 	
+ | Cryptology ePrint Archive, Report [2024/1001](https://eprint.iacr.org/2024/1001), 2024.
+

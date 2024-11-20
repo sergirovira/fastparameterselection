@@ -1,13 +1,5 @@
 import math
-import sqlite3
-import csv
-from os.path import exists
-import ast
 import sys, getopt
-import pickle
-import json
-import os
-from pathlib import Path
 
 from formula_params import *
 from formulas import *
@@ -37,6 +29,7 @@ def main(argv):
     std_s = 0.5
     std_e = 3.19
     secret_q = 2
+    ntru_flag = False
 
     headers = []
     data = []
@@ -48,6 +41,8 @@ def main(argv):
 
     if (len(opts) == 0): helper()
 
+    output_dict = {}
+
     for opt, arg in opts:
         if opt == '-h':
             helper()
@@ -56,28 +51,38 @@ def main(argv):
             if secret == 'binary': 
                 std_s = UniformModStd(2)
                 secret_q = 2
+                output_dict['std_s'] = 0.5
             elif secret == 'ternary': 
                 std_s = UniformModStd(3)
                 secret_q = 3
+                output_dict['std_s'] = math.sqrt(2./3)
             else: 
                 print("Secret distribution not supported")
                 sys.exit() 
         elif opt == '--error':
             std_e = float(arg)
+            output_dict['std_e'] = std_e
         elif opt == '--param':
             param = arg
         elif opt == '--n':
             lwe_d = int(arg)
+            output_dict['n'] = lwe_d
         elif opt == '--lambda':
             l = int(arg)
+            output_dict['lambda'] = l
         elif opt == '--logq':
             logq = parse_logq(arg)
+            output_dict['logq'] = logq
         elif opt == '--verify':
             verify = int(arg)
         elif opt == '--file':
             file_path = arg
+        elif opt == '--ntru':
+            ntru_flag = True
         else:
             helper()
+
+
 
     if secret == "binary":
         lambda_usvp = lambda_usvp_bin
@@ -126,10 +131,10 @@ def main(argv):
 
     if param == 'n':
         
-        if(verify):
-            headers = ["Secr. d.", "l", "logq", "std_e", "usvp_num", "usvp_s e21", "usvp_num p", "usvp_s p", "bdd_num", "bdd", "bdd_s e22", "bdd_num p", "bdd p", "bdd_s p", "l", "lwe usvp_num", "lwe usvp_s e21", "lwe usvp_num p", "lwe usvp_s p", "lwe bdd_num", "lwe bdd", "lwe bdd_s e22", "lwe bdd_num p", "lwe bdd p", "lwe bdd_s p"]
+        if(verify and estimator_installed):
+            headers = ["Secret dist.", "lambda", "log q", "usvp_s (Eq. 21)", "lwe est", "usvp_s pow2", "lwe est", "bdd_s (Eq. 22)", "lwe est", "bdd_s pow2", "lwe est"]
         else:
-            headers = ["Secr. d.", "l", "logq", "std_e", "usvp_num", "usvp_s e21", "usvp_num p", "usvp_s p", "bdd_num", "bdd", "bdd_s e22", "bdd_num p", "bdd p", "bdd_s p"]
+            headers = ["Secret dist.", "lambda", "log q", "usvp_s (Eq. 21)", "usvp_s pow2", "usvp_s num", "bdd", "bdd pow2", "bdd_s (Eq. 22)", "bdd_s pow2", "bdd_s num"]
 
         helper_headers(headers)
 
@@ -170,6 +175,7 @@ def main(argv):
                 else:
                     data_point = [secret, l, logq, std_e, est_usvp_num, est_usvp, est_usvp_num_pow, est_usvp_pow, est_bdd_num, est_bdd, est_bdd_s, est_bdd_num_pow, est_bdd_pow, est_bdd_s_pow]
                 data.append(data_point)
+                output_dict['n'] = min(est_usvp, est_usvp_pow, est_bdd, est_bdd_pow)  #take min for a more conservative overstretchness estimation
         else:
             for lq in logq:
                 est_usvp = int(math.ceil(model_n_usvp(l, lq, n_usvp_s)))
@@ -193,11 +199,13 @@ def main(argv):
                     data_point = [secret, l, lq, std_e, est_usvp_num, est_usvp, est_usvp_num_pow, est_usvp_pow, est_bdd_num, est_bdd, est_bdd_s, est_bdd_num_pow, est_bdd_pow, est_bdd_s_pow]
 
                 data.append(data_point)
+                output_dict['n'] = min(est_usvp, est_usvp_pow, est_bdd, est_bdd_pow, est_usvp_numerical, est_bdd_numerical)  #take min for a more conservative overstretchness estimation
+
 
     elif param == 'logq':
         
-        if(verify):
-            headers = ["Secret dist.", "lambda", "LWE dim.", "std_e", "logq usvp_num", "logq bdd_num", "lambda", "lwe usvp", "lwe bdd"]
+        if(verify and estimator_installed):
+            headers = ["Secret dist.", "lambda", "n", "logq usvp", "logq bdd", "lwe est"]
         else:
             headers = ["Secret dist.", "lambda", "LWE dim.", "std_e", "logq usvp_num", "logq bdd_num"]
 
@@ -228,6 +236,7 @@ def main(argv):
                 else:
                     data_point = [secret, l, lwe_d, std_e, est_usvp_num, est_bdd_num]
                 data.append(data_point)
+                output_dict['logq'] = max(est_usvp, est_bdd, est_usvp_pow, est_bdd_pow)
         else:
                 est_usvp_num = int(math.ceil(numerical_logq_usvp(l, lwe_d, std_s, std_e)))
                 est_bdd_num = int(math.ceil(numerical_logq_bdd(l, lwe_d, std_s, std_e)))
@@ -242,11 +251,10 @@ def main(argv):
                     data_point = [secret, l, lwe_d, std_e, est_usvp_num, est_bdd_num]
 
                 data.append(data_point)
-
-    elif param == 'error':
-        
-        if(verify):
-            headers = ["Secret dist.", "lambda", "LWE dim.", "log q", "std_e usvp", "std_e bdd", "lambda", "lwe usvp", "lwe bdd", "lwe usvp 3.19", "lwe bdd 3.19"]
+                output_dict['logq'] = max(est_usvp_numerical, est_bdd_numerical)
+    elif param == 'std_e':
+        if(verify and estimator_installed):
+            headers = ["Secret dist.", "lambda", "n", "logq", "std_e bdd", "lwe est"]
         else:
             headers = ["Secret dist.", "lambda", "LWE dim.", "log q", "std_e usvp_num", "std_e bdd_num"]
 
@@ -280,6 +288,7 @@ def main(argv):
                 else:
                     data_point = [secret, l, lwe_d, logq, est_usvp_num, est_bdd_num]
                 data.append(data_point)
+                output_dict['std_e'] = min(est_usvp, est_bdd, est_usvp_pow, est_bdd_pow)
         else:
 
             for lq in logq:
@@ -295,9 +304,10 @@ def main(argv):
                     lwe_usvp_bench = math.floor(math.log2(LWE.primal_bdd(lwe_parameters_bench)["rop"]))
                     data_point = [secret, l, lwe_d, lq, est_usvp_num, est_bdd_num, l, lwe_usvp, lwe_bdd, lwe_usvp_bench, lwe_bdd_bench]
                 else:
-                    data_point = [secret, l, lwe_d, lq, est_usvp_num, est_bdd_num]
-
+                    data_point = [secret, l, lwe_d, lq, est_usvp_numerical, est_bdd_numerical]
                 data.append(data_point)
+                output_dict['std_e'] = min(est_usvp_numerical, est_bdd_numerical)
+
 
     # If we select to run the formulas for the security level, we get an output of the following form:
     #
@@ -313,9 +323,8 @@ def main(argv):
 
 
     elif param == 'lambda':
-
-        if(verify):
-            headers = ["Secr. d.", "LWE dim.", "log q", "std_e", "usvp num", "usvp eq14", "usvp_s eq16", "usvp lwe", "bdd num", "bdd eq17", "bdd_s eq20", "bdd lwe"]
+        if(verify and estimator_installed):
+            headers = ["Secret dist.", "LWE dim.", "log q", "usvp (Eq. 14)", "diff", "usvp_s (Eq. 16)", "diff", "bdd (Eq. 17)", "diff", "bdd_s (Eq. 20)", "diff", "Estimator"]
         else:
             headers = ["Secret dist.", "LWE dim.", "log q", "std_e", "usvp num", "usvp (Eq. 14)", "usvp_s (Eq. 16)", "bdd num", "bdd (Eq. 17)", "bdd_s (Eq. 20)"]
 
@@ -359,6 +368,7 @@ def main(argv):
                 else:
                     data_point = [secret, lwe_d, logq, std_e, est_usvp_num, est_usvp, est_usvp_s, est_bdd_num, est_bdd, est_bdd_s]
                 data.append(data_point)
+                output_dict['lambda'] = min(est_usvp, est_usvp_s, est_bdd, est_bdd_s)
         
         else:
             for lq in logq:
@@ -382,10 +392,18 @@ def main(argv):
                     data_point = [secret, lwe_d, lq, std_e, est_usvp_num, est_usvp, est_usvp_s, est_bdd_num, est_bdd, est_bdd_s]
 
                 data.append(data_point)
+                #output_dict['lambda'] = min(est_usvp, est_usvp_s, est_bdd, est_bdd_s)
 
     else: helper()
 
     print_table(headers,data)
+
+    #check if the output parameters are in the overstretched regime
+    if ntru_flag:
+        beta_ =  check_overstreched(output_dict)
+        if (beta_>0 and output_dict['lambda']>0 and (output_dict['lambda']-0.292*beta_)>20):
+            print("Warning: the ntru parameters are in the overstretched regime")
+
     
     if param == "est":
         for lq in logq:
