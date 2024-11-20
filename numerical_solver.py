@@ -172,7 +172,6 @@ def numerical_std_e_bdd(l, n, logq, std_s):
 
     beta_solution = fsolve(eq8, eta_solution, full_output = False)
     d = max(d_optimal(beta_solution[0]), n)
-    print(d)
     eta = eta_solution[0]
     beta = beta_solution[0]
 
