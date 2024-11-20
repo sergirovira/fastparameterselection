@@ -98,23 +98,6 @@ def main(argv):
         n_bdd_s = n_bdd_s_ter
 
 
-   
-    # std_e_values = np.linspace(0.1, 500, 100)  # Adjust the range as needed
-
-    # print(std_e_values)
-
-    # eq_values = np.array([numerical_std_e_bdd_plot(l, lwe_d, logq, std_s, std_e) for std_e in std_e_values])
-
-    # # Plotting the function
-    # plt.figure(figsize=(10, 6))
-    # plt.plot(std_e_values, eq_values, label=r'$eq(\sigma_e)$')
-    # #plt.axhline(0, color='red', linestyle='--', label='y=0 (Root)')
-    # plt.xlabel(r'$\sigma_e$')
-    # plt.ylabel(r'$eq(\sigma_e)$')
-    # plt.title('Plot of the equation function $eq(\sigma_e)$')
-    # plt.legend()
-    # plt.grid(True)
-    # plt.show()
 
     # If we select to run the formulas for the LWE dimension, we get an output of the following form:
     #
