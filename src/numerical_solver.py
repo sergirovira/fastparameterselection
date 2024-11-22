@@ -1,4 +1,4 @@
-from numpy import pi, exp, log, log2, sqrt
+from numpy import pi, exp, log, log2, sqrt, divide
 from scipy.optimize import fsolve
 
 import numpy as np
@@ -107,58 +107,87 @@ def numerical_n_usvp(l, logq, std_s, std_e):
     n_solution, beta_solution = fsolve(system_usvp_l, [n_initial_guess, beta_initial_guess], full_output = False)
     return n_solution
 
-
 def numerical_logq_bdd(l, n, std_s, std_e):
-    eta_initial_guess = (l - 16.4) / 0.292
-    eta_eq = lambda eta : l - (0.292*eta+log2(8*eta)+16.4)
-    eta_solution = fsolve(eta_eq, eta_initial_guess, full_output = False)
-    eta = eta_solution[0]
+    lnq_initial_guess = n/100
 
-    d_optimal = lambda lnq, beta : sqrt(n * lnq / log(_delta(beta)))
-    eq8 = lambda lnq, beta : l - (0.292 * beta + log2(8 * d_optimal(lnq, beta)) + 16.4)
+    zeta = std_e/std_s
 
-    ln_std_e = log(std_e)
-    zeta = max(0, ln_std_e - log(std_s))
-    d = lambda lnq, beta : max(d_optimal(lnq, beta), n)
-    eq_for_lnq_and_beta = lambda lnq, beta: eta - d(lnq, beta) + 1/log(_delta(beta)) * (lnq - ln_std_e - 0.5*log(const) - n / d(lnq, beta) * (lnq - zeta ) )
+    beta = (l-16.4)/0.292
 
-    def system_bdd_eta_lnq(x): # x[0] = lnq, x[1] = beta
-        f1 = eq_for_lnq_and_beta(x[0], x[1])
-        f2 = eq8(x[0], x[1])
-        return f1, f2
+    nom = lambda lnq : 2 * n * lnq * log(beta/const)
+    denom = lambda lnq : log(beta/const) + 2 * lnq - 2 * log(std_e) - log(const) - 2 * (lnq - log(zeta)) * sqrt(n * log(beta/const) / (2 * lnq * beta))
+    eq = lambda lnq : beta - nom(lnq) / (denom(lnq)**2)
 
-    lnq_initial_guess = 3 * log(n)
-    solutions_lnq_and_beta = fsolve(system_bdd_eta_lnq, [lnq_initial_guess, eta], full_output = True)
-    lnq_solution = solutions_lnq_and_beta[0][0]
-
-    if not solutions_lnq_and_beta[2]==1:
-        print(solutions_lnq_and_beta[3])
-    logq_solution = lnq_solution / ln2
-    return logq_solution
-
+    lnq_solution = fsolve(eq, lnq_initial_guess, full_output = False)
+    
+    return divide(lnq_solution[0], ln2)
 
 def numerical_logq_usvp(l, n, std_s, std_e):
-    zeta = max(1,round(std_e/std_s))
+    lnq_initial_guess = n/100
 
-    # find lnq and beta numerically
-    lnq_initial_guess = 3 * log(n)
-    beta_initial_guess = (l - 16.4) / 0.292
+    zeta = std_e/std_s
+
+    beta = (l-16.4)/0.292
+
+    nom = lambda lnq : 2 * n * (lnq - log(zeta)) * log(beta/const)
+    denom = lambda lnq : lnq + log(sqrt(beta)/(const*std_e))
+    eq = lambda lnq : beta - nom(lnq) / (denom(lnq)**2)
+
+    lnq_solution = fsolve(eq, lnq_initial_guess, full_output = False)
+
+    return divide(lnq_solution[0], ln2)
+
+# def numerical_logq_bdd(l, n, std_s, std_e):
+#     eta_initial_guess = (l - 16.4) / 0.292
+#     eta_eq = lambda eta : l - (0.292*eta+log2(8*eta)+16.4)
+#     eta_solution = fsolve(eta_eq, eta_initial_guess, full_output = False)
+#     eta = eta_solution[0]
+
+#     d_optimal = lambda lnq, beta : sqrt(n * lnq / log(_delta(beta)))
+#     eq8 = lambda lnq, beta : l - (0.292 * beta + log2(8 * d_optimal(lnq, beta)) + 16.4)
+
+#     ln_std_e = log(std_e)
+#     zeta = max(0, ln_std_e - log(std_s))
+#     d = lambda lnq, beta : max(d_optimal(lnq, beta), n)
+#     eq_for_lnq_and_beta = lambda lnq, beta: eta - d(lnq, beta) + 1/log(_delta(beta)) * (lnq - ln_std_e - 0.5*log(const) - n / d(lnq, beta) * (lnq - zeta ) )
+
+#     def system_bdd_eta_lnq(x): # x[0] = lnq, x[1] = beta
+#         f1 = eq_for_lnq_and_beta(x[0], x[1])
+#         f2 = eq8(x[0], x[1])
+#         return f1, f2
+
+#     lnq_initial_guess = 3 * log(n)
+#     solutions_lnq_and_beta = fsolve(system_bdd_eta_lnq, [lnq_initial_guess, eta], full_output = True)
+#     lnq_solution = solutions_lnq_and_beta[0][0]
+
+#     if not solutions_lnq_and_beta[2]==1:
+#         print(solutions_lnq_and_beta[3])
+#     logq_solution = lnq_solution / ln2
+#     return logq_solution
+
+
+# def numerical_logq_usvp(l, n, std_s, std_e):
+#     zeta = max(1,round(std_e/std_s))
+
+#     # find lnq and beta numerically
+#     lnq_initial_guess = 3 * log(n)
+#     beta_initial_guess = (l - 16.4) / 0.292
     
-    nom = lambda lnq, beta : 2 * n * lnq * log(beta/const)
-    denom = lambda lnq, beta : log(beta/const) + 2 * lnq - 2 * log(std_e) - log(const) - 2 * (lnq - log(zeta)) * sqrt(n * log(beta/const) / (2 * lnq * beta))
-    eq11 = lambda lnq, beta : beta - nom(lnq, beta) / (denom(lnq, beta)**2)
+#     nom = lambda lnq, beta : 2 * n * lnq * log(beta/const)
+#     denom = lambda lnq, beta : log(beta/const) + 2 * lnq - 2 * log(std_e) - log(const) - 2 * (lnq - log(zeta)) * sqrt(n * log(beta/const) / (2 * lnq * beta))
+#     eq11 = lambda lnq, beta : beta - nom(lnq, beta) / (denom(lnq, beta)**2)
 
-    d_optimal = lambda lnq, beta : sqrt(2 * n * (lnq - log(zeta)) * beta / log(beta / const))
-    eq12 = lambda lnq, beta : l - (0.292 * beta + log2(8 * d_optimal(lnq, beta)) + 16.4)
+#     d_optimal = lambda lnq, beta : sqrt(2 * n * (lnq - log(zeta)) * beta / log(beta / const))
+#     eq12 = lambda lnq, beta : l - (0.292 * beta + log2(8 * d_optimal(lnq, beta)) + 16.4)
 
-    def system_usvp_lnq(x): # x[0] = lnq, x[1] = beta
-        f1 = eq11(x[0], x[1])
-        f2 = eq12(x[0], x[1])
-        return f1, f2
+#     def system_usvp_lnq(x): # x[0] = lnq, x[1] = beta
+#         f1 = eq11(x[0], x[1])
+#         f2 = eq12(x[0], x[1])
+#         return f1, f2
     
-    lnq_solution, beta_solution = fsolve(system_usvp_lnq, [lnq_initial_guess, beta_initial_guess], full_output = False)
-    logq_solution = lnq_solution / ln2
-    return logq_solution
+#     lnq_solution, beta_solution = fsolve(system_usvp_lnq, [lnq_initial_guess, beta_initial_guess], full_output = False)
+#     logq_solution = lnq_solution / ln2
+#     return logq_solution
 
 
 def numerical_std_e_bdd(l, n, logq, std_s):
