@@ -1,8 +1,8 @@
-Guidance for Efficient Selection of Secure
-Parameters for FHE
+A Tool for Fast and Secure LWE Parameter
+Selection
 =======================================
-
-This repository implements the formulas of the paper [Guidance for Efficient Selection of Secure Parameters for Fully Homomorphic Encryption](https://eprint.iacr.org/2024/1001).
+In this repository, we offer a tool to select secure parameters for LWE-based applications in a fast and flexible way. The tool can provide you with any of the following parameters: security level, size of the ciphertext modulus, LWE dimension and standard deviation of the error distribution. 
+Our tool is constructed by studying the uSVP and BDD attacks against LWE. From this study, we derive formulas which describe each of the aforementioned parameters as a function of the others. You can find all the details in this paper [A Tool for Fast and Secure LWE Parameter Selection: the FHE case](https://eprint.iacr.org/2024/1895). Section 6 of the paper comprehensively explains the tool's usage, which complements this readme.  
 
 Usage
 -----
