@@ -84,7 +84,7 @@ Please report bugs through the [GitHub issue tracker](https://github.com/sergiro
 Citing
 ------
 
-The paper was presented at Africacrypt 2024:
+The paper associated with our tool is a follow-up and extension of the following paper presented at Africacrypt 2024:
 
  ````
  @inproceedings{kirshanova2024guidance,
@@ -98,8 +98,8 @@ The paper was presented at Africacrypt 2024:
  ````
   
   			
-A pre-print is available as
+The pre-prints of the papers are available at
 	 
-	 	
- | Cryptology ePrint Archive, Report [2024/1001](https://eprint.iacr.org/2024/1001), 2024.
+ | Cryptology ePrint Archive, Report [2024/1001](https://eprint.iacr.org/2024/1001), 2024. 	
+ | Cryptology ePrint Archive, Report [2024/1895](https://eprint.iacr.org/2024/1895), 2024.
 
