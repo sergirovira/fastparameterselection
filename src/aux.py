@@ -95,10 +95,10 @@ def run_verification(lq,secret,est_usvp,est_bdd,est_usvp_pow,est_bdd_pow):
     return lwe_usvp, lwe_bdd, lwe_usvp_pow, lwe_bdd_pow
 
 def helper():
-    #print('python3 src/estimate.py --param "lambda" --file "example_lambda_binary.csv"')
-    # print('python3 src/estimate.py --param "n" --file "example_n_binary.csv"')
-    # print('python3 src/estimate.py --param "logq" --file "example_logq_binary.csv"')
-    # print('python3 src/estimate.py --param "error" --file "example_error_binary.csv"')
+    #print('python3 src/estimate.py --param "lambda" --file "./examples/example_lambda_binary.csv"')
+    print('python3 src/estimate.py --param "n" --file "./examples/example_n_binary.csv"')
+    # print('python3 src/estimate.py --param "logq" --file "./examples/example_logq_binary.csv"')
+    # print('python3 src/estimate.py --param "error" --file "./examples/example_error_binary.csv"')
     print('python3 src/estimate.py --param "lambda" --n "1024" --logq "20-30;35;40-60" --secret "binary" --error "3.19"')
     print('python3 src/estimate.py --param "n" --lambda "80" --logq "20-30" --secret "binary" --error "3.19"')
     print('python3 src/estimate.py --param "logq" --lambda "80" --n "1024" --secret "binary" --error "3.19"')
