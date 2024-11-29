@@ -48,32 +48,41 @@ docker-compose -f ./docker/docker-compose.yaml up
 Currently, it runs estimate.py to obtain the parameter lambda, given n = 1024, logq = 35, binary secret distribution and standard deviation of the error distribution 3.19. To run the estimation with your parameters, you can modify the command line in docker-compose.yaml as follows.
 Find an estimation of the security level:
 ````
-command: [ "sage", "--python3", "estimate.py", "--param", "lambda",  "--n", "1024", "--logq", "20-30;35;40-60", "--secret", "binary", "--error", "3.19"]
+command: [ "sage", "--python3", "src/estimate.py", "--param", "lambda",  "--n", "1024", "--logq", "20-30\\;35\\;40-60", "--secret", "binary", "--error", "3.19"]
 ````
 Find an estimation of the security level and verify it against the Lattice Estimator:
 ````
-command: [ "sage", "--python3", "estimate.py", "--param", "lambda",  "--n", "1024", "--logq", "20-30;35;40-60", "--secret", "binary", "--error", "3.19", "--verify", "1" ]
+command: [ "sage", "--python3", "src/estimate.py", "--param", "lambda",  "--n", "1024", "--logq", "20-30\\;35\\;40-60", "--secret", "binary", "--error", "3.19", "--verify", "1" ]
 ````
 Find an estimation of the LWE dimension:
 ````
-command: ["sage", "--python3", "estimate.py", "--param", "n",  "--lambda", "80", "--logq", "20", "--secret", "binary", "--error", "3.19"]
+command: ["sage", "--python3", "src/estimate.py", "--param", "n",  "--lambda", "80", "--logq", "20", "--secret", "binary", "--error", "3.19"]
 ````
 Find an estimation of the size of the modulus q:
 ````
-command: ["sage", "--python3", "estimate.py", "--param", "logq",  "--lambda", "80", "--n", "1024", "--secret", "binary", "--error", "3.19"]
+command: ["sage", "--python3", "src/estimate.py", "--param", "logq",  "--lambda", "80", "--n", "1024", "--secret", "binary", "--error", "3.19"]
 ````
 Find an estimation of the standard deviation of the error distribution:
 ````
-command: ["sage", "--python3", "estimate.py", "--param", "std_e",  "--lambda", "80", "--n", "1024", "--secret", "binary", "--error", "3.19"]
+command: ["sage", "--python3", "src/estimate.py", "--param", "std_e",  "--lambda", "80", "--n", "1024", "--logq", "20", "--secret", "binary"]
 ````
 Find an estimation of the security level, given the example parameters in example_lambda_binary.csv: 
 ````
-command: ["sage", "--python3", "estimate.py", "--param", "lambda", "--file", "../examples/example_lambda_binary.csv", "--verify", "1"]
+command: ["sage", "--python3", "src/estimate.py", "--param", "lambda", "--file", "./examples/example_lambda_binary.csv", "--verify", "1"]
 ````
 Find an estimation of the LWE dimension, given the example parameters in example_n_ternary.csv:
 ````
-command: ["sage", "--python3", "estimate.py", "--param", "n", "--file", "../examples/example_n_ternary.csv"]
+command: ["sage", "--python3", "src/estimate.py", "--param", "n", "--file", "./examples/example_n_ternary.csv"]
 ````
+Find an estimation of the size of the modulus q, given the example parameters in example_logq_binary.csv:
+````
+command: ["sage", "--python3", "src/estimate.py", "--param", "logq", "--file", "./examples/example_logq_binary.csv"]
+````
+Find an estimation of the standard deviation of the error distribution, given the example parameters in example_error_binary.csv:
+````
+command: ["sage", "--python3", "src/estimate.py", "--param", "error", "--file", "./examples/example_error_binary.csv"]
+````
+
 Note: in the Docker version, we applied a change to the [Lattice Estimator](...), to address an imprecision in the case where the standard deviation of the error distribution is much larger than 3.19.
      
 Bugs

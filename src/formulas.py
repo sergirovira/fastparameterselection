@@ -1,7 +1,7 @@
 import sys, math
 from numpy import multiply
 
-sys.path.append('../lattice-estimator')
+sys.path.append('./lattice-estimator')
 
 try:
     from estimator import *
