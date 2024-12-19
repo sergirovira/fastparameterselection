@@ -6,7 +6,7 @@ from formulas import *
 from aux import *
 from numerical_solver import *
 
-sys.path.append('../lattice-estimator')
+sys.path.append('./lattice-estimator')
 estimator_installed = 1
 
 try:
