@@ -21,7 +21,7 @@ def run_estimator():
     hs = [64, 128, 192, 256, 512]
     logqs = [700,750,800,850,900,950,1000]
     #logqs = [800]
-    #hs = [64]
+    hs = [256]
     for nlog in nlogs:
         for h in hs:
             for logq in logqs:
