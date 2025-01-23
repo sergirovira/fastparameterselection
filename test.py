@@ -26,7 +26,7 @@ def _delta(beta):
 # n:15 logq:1000 h:128 eta: 2 beta:216 lambda:103.54478126305857 zeta:4153 d:57524 red:103.37133921958673 svp:100.40268813476786 prob:0.126838697663571 wt:13
 
 #[logq, h, beta, ng, d, wg]
-all_params = [ [700, 64, 187, 14594, 34770, 10], [750, 64, 202, 12310, 40004, 11],
+all_params_mitm = [ [700, 64, 187, 14594, 34770, 10], [750, 64, 202, 12310, 40004, 11],
                [800, 64, 198, 11182, 42517, 11], [850, 64, 181, 11026, 42838, 10],
                [900, 64, 183, 9568, 46041, 10], [950, 64, 169, 9396, 46397, 9],
                [1000, 64, 159, 9000, 47230, 9],
@@ -40,6 +40,38 @@ all_params = [ [700, 64, 187, 14594, 34770, 10], [750, 64, 202, 12310, 40004, 11
                [800, 256, 326, 2951, 60109, 21], [850, 256, 302, 2684, 60676, 20],
                [900, 256, 292, 1696, 62777, 21], [950, 256, 269, 1582, 62898, 19],
                [1000, 256, 251, 1423, 63264, 18] ]
+
+all_params15 = [ [700, 64, 186, 14350, 34934, 5], [750, 64, 228, 10330, 43999, 6],
+               [800, 64, 218, 9493, 45832, 6], [850, 64, 208, 8745, 47454, 6],
+               [900, 64, 208, 7327, 50501, 6], [950, 64, 182, 8014, 49024, 5],
+               [1000, 64, 200, 5162, 55061, 6],
+
+               [700, 128, 366, 4166, 57182, 11], [750, 128, 339, 3677, 58191, 10],
+               [800, 128, 284, 5189, 55043, 8], [850, 128, 289, 3112, 59331, 9],
+               [900, 128, 264, 3175, 59203, 8], [950, 128, 255, 2207, 61164, 8],
+               [1000, 128, 229, 2734, 60086, 7],
+
+               [700, 192, 390, 2897, 59804, 12], [750, 192, 357, 2642, 60322, 11],
+               [800, 192, 328, 2416, 60773, 10], [850, 192, 311, 1652, 62330, 10],
+               [900, 192, 283, 1806, 62005, 9], [950, 192, 272, 917, 63796, 10],
+               [1000, 192, 253, 803, 64049, 9]
+               ]
+
+all_params16 = [ [700, 64, 502, 29972, 66900, 12], [750, 64, 496, 27694, 72150, 12],
+                 [800, 64, 299, 37512, 49128, 7], [850, 64, 292, 36075, 52534, 7],
+                 [900, 64, 251, 37402, 49384, 6], [950, 64, 303, 31484, 63348, 7],
+                 [1000, 64, 247, 34312, 56697, 6],
+
+                 [700, 128, 539, 28087, 71276, 13], [750, 128, 501, 27433, 72768, 12],
+                 [800, 128, 566, 21107, 86998, 14], [850, 128, 492, 22833, 83154, 12],
+                 [900, 128, 491, 20366, 88615, 12], [950, 128, 458, 20137, 89112, 11],
+                 [1000, 128, 475, 16489, 97048, 12],
+
+                 [700, 192, 693, 20518, 88335, 17], [750, 192, 644, 19810, 89879, 16],
+                 [800, 192, 674, 15094, 100094, 17], [850, 192, 598, 16406, 97262, 15],
+                 [900, 192, 588, 14138, 102114, 15], [950, 192, 575, 12149, 106327, 15],
+                 [1000, 192, 541, 11737, 107182, 14]
+                 ]
 ln2 = log(2)
 e = exp(1)
 # h = 128
@@ -77,35 +109,50 @@ def entropy(x):
 def approx_binom(n, k):
     return n*entropy(k/n)+0.5*log2(n/(8*k*(n-k)))
 
+
+
 def prob_sum(n,ng, w):
     s = 0
     for i in range(1, w+1):
         s+=approx_binom(n-h, ng-i)+approx_binom(h, i)-approx_binom(n, ng)
     return s
 
+def test_runtime(n, ng, w, h):
+    s1 = 0
+    s2 = 0
+    for i in range(1, w+1):
+        s1+=2**i*scipy.special.binom(ng, i)
+        s2+= scipy.special.binom(n-h, ng-i)*scipy.special.binom(h, i)
+
+    return log2(scipy.special.binom(n, ng))+log2(s1) - log2( s2 )
+
 #[logq, h, beta, ng, d, wg]
-for param in all_params:
-    wg = param[5]
+for param in all_params16:
+    wg = param[5]-1
     h = param[1]
     lnq = param[0] * ln2
-    n = 2**15
-    eq1 = lambda ng_, beta_, d_: 0.5*(approx_binom(ng_,wg)+wg)+log2(d_) - (0.292*beta_+16.4+3) -1 #0.5*(ng_*entropy(wg/ng_)+wg) #- 0.5*log2(8*n*wg/ng_*(1-wg/ng_)) #0.5*(log2(math.comb(ng_, wg),2)+wg)
+    n = 2**16
+    sigma_s = sqrt(h/n)
+    xi = 3.19/ sigma_s
+    eq1 = lambda ng_, beta_, d_: (approx_binom(ng_,wg)+wg)+log2(d_) - (0.292*beta_+16.4+3)  #0.5*(ng_*entropy(wg/ng_)+wg) #- 0.5*log2(8*n*wg/ng_*(1-wg/ng_)) #0.5*(log2(math.comb(ng_, wg),2)+wg)
     eq2 = lambda ng_: log2((n-ng_)/ng_)+log2( (n-h+wg-ng_)/(ng_-wg)) -0.5*log2(1-wg/ng_)
     eq3 = lambda ng_, beta_, d_: d_ - ceil(sqrt(n * lnq / log(_delta(beta_)))) + ng_ - 1 #adding ceil over sqrt() makes the eq. precise
-
+    eqn = lambda ng_, beta_, d_: (-d_-1)*log2(_delta(beta_))+ ((d_-n+ng_-1)*param[0]+ (n-ng_)*log2(xi))/d_ - 4 #success probablity of Babai=1, i.e. ||b_d*|| = sigma_e \approx 4
     prob = lambda ng_ : approx_binom(n-h, ng_-wg)+approx_binom(h, wg)-approx_binom(n, ng_) #(n-h)*entropy((ng_-wg)/(n-h)) + h*entropy(wg/h) - n*entropy(ng_/n)
-    eq4 = lambda ng_, d_ : 0.5*(approx_binom(ng_,wg)+wg)+2*log2(d_) -1 -prob(ng_)
+    eq4 = lambda ng_, d_ : (approx_binom(ng_,wg)+wg)+2*log2(d_) -1 -prob(ng_)
     eq5 = lambda ng_, beta_, d_ :  (0.292*beta_+16.4+3 + log2(d_)) - prob(ng_)
-    print(param[0],param[1], param[2], param[3], param[4], ": ", eq1(param[3], param[2], param[4]),eq2(param[3]), eq3(param[3], param[2], param[4]) )
-    print(param[0],param[1], param[2], param[3], param[4], ": ", eq4(param[3],param[4]), eq5(param[3], param[2], param[4]), prob(param[3]))
+    print(param[0],param[1], param[2], param[3], param[4], ": ", eq1(param[3], param[2], param[4]), eq3(param[3], param[2], param[4]), eqn(param[3], param[2], param[4]) )
+    #print(param[0],param[1], param[2], param[3], param[4], ": ", eq4(param[3],param[4]), eq5(param[3], param[2], param[4]), prob(param[3]))
 
     def system(x):
         f1 = eq1(x[0], x[1], x[2])
-        f2 = eq2(x[0])
+        #f2 = eq2(x[0])
         f3 = eq3(x[0], x[1], x[2])
-        return f1, f2, f3
+        fn = eqn(x[0], x[1], x[2])
+        return f1, f3, fn
 
-    res = fsolve(system, [400, param[3], 2*n], maxfev = 2**21, full_output=False)
-    #print(eq1(res[0], res[1], res[2]),eq2(res[0]), eq3(res[0], res[1], res[2]))
-    #print(res)
+    res = fsolve(system, [n/2, n/4, 2*n], maxfev = 2**21, full_output=False)
+    print(eq1(res[0], res[1], res[2]),eq3(res[0], res[1], res[2]), eqn(res[0], res[1], res[2]))
+    print(res)
+    #print(test_runtime(n, param[3], wg, h))
     print("--------------")

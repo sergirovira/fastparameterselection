@@ -16,12 +16,13 @@ def test_numerics_lambda():
                 #print(f"n:{nlog} logq:{logq } h:{h}, ng: {res[0]}, beta: {res[1]}")
 
 
+
 def run_estimator():
-    nlogs = [15]
-    hs = [64, 128, 192, 256, 512]
-    logqs = [700,750,800,850,900,950,1000]
-    #logqs = [800]
-    hs = [256]
+    nlogs = [14]
+    #hs = [64, 128, 192, 256, 512]
+    #logqs = [700,750,800,850,900,950,1000]
+    logqs = [700]
+    hs = [128]
     for nlog in nlogs:
         for h in hs:
             for logq in logqs:
@@ -32,14 +33,16 @@ def run_estimator():
                     Xe=NoiseDistribution.DiscreteGaussian(stddev=3.19),
                 )
                 try:
-                    primal_hybrid_cost = LWE.primal_hybrid(FHEParam, red_cost_model=RC.BDGL16)
+                    primal_hybrid_cost = LWE.primal_hybrid(FHEParam, red_cost_model=RC.BDGL16, mitm=False)
                     ll = log2(primal_hybrid_cost['rop'])
                     beta = primal_hybrid_cost['beta']
                     eta  = primal_hybrid_cost['eta']
                     zeta = primal_hybrid_cost['zeta']
                     d = primal_hybrid_cost['d']
-                    svp_cost = log2(primal_hybrid_cost["svp"])
-                    red_cost = log2(primal_hybrid_cost["red"])
+                    #print("primal_hybrid_cost svp:", primal_hybrid_cost["svp"], type(primal_hybrid_cost["svp"]), log2(float(primal_hybrid_cost["svp"])))
+                    svp_cost = log2(float(primal_hybrid_cost["svp"]))
+                    #print("primal_hybrid_cost red_cost:", primal_hybrid_cost["red"])
+                    red_cost = log2(float(primal_hybrid_cost["red"]))
                     prob =  primal_hybrid_cost["prob"]
                     wt = primal_hybrid_cost["wt"]
                     print(f"n:{nlog} logq:{logq } h:{h} eta: {eta} beta:{beta} lambda:{ll} zeta:{zeta} d:{d} red:{red_cost} svp:{svp_cost} prob:{prob} wt:{wt} ")
