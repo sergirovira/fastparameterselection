@@ -74,6 +74,7 @@ all_params16 = [ [700, 64, 502, 29972, 66900, 12], [750, 64, 496, 27694, 72150, 
                  ]
 ln2 = log(2)
 e = exp(1)
+const = 2*pi*e
 # h = 128
 # n = 2**15
 # logq = 700
@@ -109,7 +110,26 @@ def entropy(x):
 def approx_binom(n, k):
     return n*entropy(k/n)+0.5*log2(n/(8*k*(n-k)))
 
+def approx_startpoint(n, logq, h):
+    sigma_s = sqrt(h/n)
+    sigma_e = 3.19
+    #eq1 = lambda beta, d: d*log2(beta)/beta - (1-n/d)*logq - n/d*log2(sigma_e/sigma_s) + log2(sigma_e)
 
+    lnq = logq * ln2
+    zeta = round(sigma_e/sigma_s)
+
+    # find beta numerically
+    beta_initial_guess = n / 4
+
+    nom = lambda beta : 2 * n * lnq * log(beta/const)
+    denom = lambda beta : log(beta/const) + 2 * lnq - 2 * log(sigma_e) - log(const) - 2 * (lnq - log(zeta)) * sqrt(n * log(beta/const) / (2 * lnq * beta))
+    eq6 = lambda beta : beta - nom(beta) / (denom(beta)**2)
+
+    beta_solution = fsolve(eq6, beta_initial_guess, full_output = False)
+
+    # compute d (from 'FHE Formulas.pdf')
+    d_optimal = sqrt(2 * n * lnq * beta_solution[0] / log(beta_solution[0] / const))
+    return [beta_solution[0], d_optimal]
 
 def prob_sum(n,ng, w):
     s = 0
@@ -127,16 +147,17 @@ def test_runtime(n, ng, w, h):
     return log2(scipy.special.binom(n, ng))+log2(s1) - log2( s2 )
 
 #[logq, h, beta, ng, d, wg]
-for param in all_params16:
+for param in all_params15:
     wg = param[5]-1
     h = param[1]
     lnq = param[0] * ln2
-    n = 2**16
+    n = 2**15
     sigma_s = sqrt(h/n)
-    xi = 3.19/ sigma_s
-    eq1 = lambda ng_, beta_, d_: (approx_binom(ng_,wg)+wg)+log2(d_) - (0.292*beta_+16.4+3)  #0.5*(ng_*entropy(wg/ng_)+wg) #- 0.5*log2(8*n*wg/ng_*(1-wg/ng_)) #0.5*(log2(math.comb(ng_, wg),2)+wg)
+    sigma_e = 3.19
+    xi = sigma_e/ sigma_s
+    eq1 = lambda ng_, beta_, d_: (approx_binom(ng_,wg)+wg)+log2(d_) - (0.292*beta_+16.4+3)+2  #0.5*(ng_*entropy(wg/ng_)+wg) #- 0.5*log2(8*n*wg/ng_*(1-wg/ng_)) #0.5*(log2(math.comb(ng_, wg),2)+wg)
     eq2 = lambda ng_: log2((n-ng_)/ng_)+log2( (n-h+wg-ng_)/(ng_-wg)) -0.5*log2(1-wg/ng_)
-    eq3 = lambda ng_, beta_, d_: d_ - ceil(sqrt(n * lnq / log(_delta(beta_)))) + ng_ - 1 #adding ceil over sqrt() makes the eq. precise
+    eq3 = lambda ng_, beta_, d_: d_ - sqrt(n * lnq / log(_delta(beta_))) + ng_ - 1 #adding ceil over sqrt() makes the eq. precise
     eqn = lambda ng_, beta_, d_: (-d_-1)*log2(_delta(beta_))+ ((d_-n+ng_-1)*param[0]+ (n-ng_)*log2(xi))/d_ - 4 #success probablity of Babai=1, i.e. ||b_d*|| = sigma_e \approx 4
     prob = lambda ng_ : approx_binom(n-h, ng_-wg)+approx_binom(h, wg)-approx_binom(n, ng_) #(n-h)*entropy((ng_-wg)/(n-h)) + h*entropy(wg/h) - n*entropy(ng_/n)
     eq4 = lambda ng_, d_ : (approx_binom(ng_,wg)+wg)+2*log2(d_) -1 -prob(ng_)
@@ -144,14 +165,17 @@ for param in all_params16:
     print(param[0],param[1], param[2], param[3], param[4], ": ", eq1(param[3], param[2], param[4]), eq3(param[3], param[2], param[4]), eqn(param[3], param[2], param[4]) )
     #print(param[0],param[1], param[2], param[3], param[4], ": ", eq4(param[3],param[4]), eq5(param[3], param[2], param[4]), prob(param[3]))
 
-    def system(x):
-        f1 = eq1(x[0], x[1], x[2])
-        #f2 = eq2(x[0])
-        f3 = eq3(x[0], x[1], x[2])
-        fn = eqn(x[0], x[1], x[2])
-        return f1, f3, fn
 
-    res = fsolve(system, [n/2, n/4, 2*n], maxfev = 2**21, full_output=False)
+    def system(x):
+            f1 = eq1(x[0], x[1], x[2])
+            #f2 = eq2(x[0])
+            f3 = eq3(x[0], x[1], x[2])
+            fn = eqn(x[0], x[1], x[2])
+            return f1, f3, fn
+
+    #print('approx start:', approx_startpoint(n,param[0], param[1]))
+    initial_guess = approx_startpoint(n,param[0], param[1])
+    res = fsolve(system, [n/16, initial_guess[0]-10, initial_guess[1]-200], maxfev = 2**21, full_output=False)
     print(eq1(res[0], res[1], res[2]),eq3(res[0], res[1], res[2]), eqn(res[0], res[1], res[2]))
     print(res)
     #print(test_runtime(n, param[3], wg, h))

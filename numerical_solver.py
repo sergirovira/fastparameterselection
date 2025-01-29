@@ -32,17 +32,8 @@ def _delta(beta):
         (28, 1.01331),
         (40, 1.01295),
     )
-
-    # if beta <= 2:
-    #     return 1.0219
-    # elif beta < 40:
-    #     for i in range(1, len(small)):
-    #         if small[i][0] > beta:
-    #             return small[i - 1][1]
-    # elif beta == 40:
-    #     return small[-1][1]
-    # else:
     return (beta / (2 * pi * e) * (pi * beta) ** (1 / beta)) ** (1 / (2 * (beta - 1)))
+
 
 
 
