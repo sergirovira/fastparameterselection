@@ -174,8 +174,8 @@ def numerical_logq_hybrid(n, l, sigma_e, h):
     return 0 #TODO: return logq
 
 #[logq, h, beta, ng, d, wg, lambda]
-n = 2**15
-for param in all_params15:
+n = 2**16
+for param in all_params16:
 
     if param[5]==0: continue
     wg = param[5]
@@ -202,7 +202,7 @@ for param in all_params15:
     print(param[0],param[1], param[2], param[5], ": ", eq1a(param[3],param[2],param[4]), eq1b(param[3],param[2],param[4]), eq2(param[3],param[2],param[4], param[0]),eq3(param[3],param[2],param[4], param[0]))
 
     #res = numerical_logq_hybrid(n, param[6], 3.19, param[1])
-    print("------------------------------")
+    #print("------------------------------")
 
 # EXACT EQUATIONS:
 #n=14: correcting constants: [-2, -5]
