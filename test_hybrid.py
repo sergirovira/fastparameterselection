@@ -18,16 +18,16 @@ def test_numerics_lambda():
 
 
 def run_estimator():
-    nlogs = [14]
+    nlogs = [15]
     #hs = [64, 128, 192, 256, 512]
     #logqs = [700,750,800,850,900,950,1000]
-    logqs = [700]
+    logqs = [1000]
     hs = [128]
     for nlog in nlogs:
         for h in hs:
             for logq in logqs:
                 FHEParam = LWEParameters(
-                    n=2**nlog,
+                    n =2**nlog,
                     q= 2**logq,
                     Xs=NoiseDistribution.SparseTernary(2**nlog, p = h/2, m=h/2),
                     Xe=NoiseDistribution.DiscreteGaussian(stddev=3.19),
