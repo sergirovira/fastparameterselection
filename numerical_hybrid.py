@@ -285,7 +285,7 @@ for param in all_params16:
     res = numerical_logq_hybrid(n, param[6], 3.19, param[1])
     print("------------------------------")
 
-# EXACT EQUATIONS:
+# EXACT and NON-EXACT EQUATIONS:
 #n=14: correcting constants: [-2, -5]
 #n=15: correcting constants: [-2, -5]
 #n=16: correcting constants: [-2, -5]
