@@ -1,6 +1,6 @@
 from sage.all import RR, binomial
 from numpy import pi, exp, log, log2, sqrt, multiply, divide, ceil
-from scipy.optimize import fsolve
+from scipy.optimize import fsolve, least_squares, minimize, root, differential_evolution, basinhopping
 import scipy.special
 
 #[logq, h, beta, ng, d, wg, lambda]
@@ -82,9 +82,15 @@ all_params17 = [[800, 128, 699, 81027, 84065, 15, 350.09968802677224], [850, 128
                 [900, 512, 1504, 26837, 207301, 38, 532.2872140012998], [950, 512, 1498, 21375, 218804, 39, 506.1205897513737],
                 [1000, 512, 1394, 21859, 217769, 36, 481.9016547943525]]
 
+#all_params16 = [[700, 128, 539, 28087, 71276, 13, 249.88276051600195]]
+
 const = 2 * pi * exp(1)
 ln2 = log(2)
 e = exp(1)
+
+epsilon = 1e-10
+# def safe_log2(x):
+#     return log2(max(epsilon, x))
 
 def _delta(beta):
     small = (
@@ -101,6 +107,9 @@ def _delta(beta):
 
 def _delta_approx(beta):
     return (beta / (2 * pi * e))** (1 / (2 * (beta - 1)))
+
+def log_delta(beta):
+    return( (1 / (2 * (beta - 1))) * log2(beta / (2 * pi * e)) + (1 / (2 * (beta - 1))) * (1 / beta)* log2(pi * beta)  )
 
 # beta_test = 664
 # print(_delta((beta_test)), _delta_approx((beta_test)) )
@@ -189,8 +198,8 @@ def numerical_lambda_hybrid(n, logq, sigma_e, h):
 def numerical_logq_hybrid(n, l, sigma_e, h):
     sigma_s = sqrt(h/n)
     xi = sigma_e/ sigma_s
-    rt_min = float('inf')
-    ng_min, beta_min, d_min, logq_min, wg_min = None, None, None, None, None
+    rtdiff_min = float('inf')
+    ng_min, beta_min, d_min, logq_min, wg_min = 0.0, 0.0, 0.0, 0.0, 0.0
     sol_tolerance_min = 10
 
     beta_initial_guess = (l - log2(8*4*n) -  16.4) / 0.292
@@ -214,8 +223,8 @@ def numerical_logq_hybrid(n, l, sigma_e, h):
         #EVEN MORE NON-EXACT EQUATIONS:
         eq1a = lambda ng_, beta_, d_: l - (0.292*beta_+16.4+3+log2(d_)) + approx_binom(n-h,ng_-wg)+approx_binom(h,wg) - approx_binom(n, ng_) -2
         eq1b = lambda ng_, beta_, d_:  l - approx_binom(ng_, wg)- wg - 2*log2(d_) + approx_binom(n-h,ng_-wg)+approx_binom(h,wg) - approx_binom(n, ng_) - 5
-        eq2 = lambda ng_, beta_, d_, logq: d_ - ceil(sqrt(n * logq * ln2 / log(_delta(beta_)))) + ng_ - 1 #adding ceil over sqrt() makes the eq. precise
-        eq3 = lambda ng_, beta_, d_, logq: (-d_-1)*log2(_delta(beta_))+ ((d_-n+ng_-1)*logq+ (n-ng_)*log2(xi))/d_ - 4
+        eq2 = lambda ng_, beta_, d_, logq: d_ - (sqrt(n * logq  /log_delta(beta_))) + ng_ - 1  #adding ceil over sqrt() makes the eq. precise
+        eq3 = lambda ng_, beta_, d_, logq: (-d_-1)*log_delta(beta_)+ ((d_-n+ng_-1)*logq+ (n-ng_)*log2(xi))/d_ - 4
 
         def system(x):
             f1a = eq1a(x[0], x[1], x[2])
@@ -224,32 +233,31 @@ def numerical_logq_hybrid(n, l, sigma_e, h):
             f3 = eq3(x[0], x[1], x[2], x[3])
             return f1a, f1b, f2, f3
 
-        #print('approx start:', approx_startpoint(n,param[0], param[1]))
-        #initial_guess = approx_startpoint(n,logq, h)
-        res = fsolve(system, [n/16, param[3], param[4], logq_initial_guess], maxfev = 2**21, full_output=False)
+        ##[logq, h, beta, ng, d, wg, lambda]
+        res = fsolve(system, [n/16, param[2], param[4], logq_initial_guess], maxfev = 2**21, full_output=False)
         rt = 0.292*res[1]+log2(8*res[2])+16.4 - probability_enum(n, h, res[0], wg)
         sol_tolerance = eq1a(res[0], res[1], res[2])+eq1b(res[0], res[1], res[2])+eq2(res[0], res[1], res[2], res[3])+eq3(res[0], res[1], res[2], res[3])
         #print(wg, eq1a(res[0], res[1], res[2]),eq1b(res[0], res[1], res[2]), eq2(res[0], res[1], res[2], res[3]), eq3(res[0], res[1], res[2], res[3]), rt, sol_tolerance)
 
-        if(abs(sol_tolerance)<1e-5 and rt<rt_min): #if(rt<rt_min and abs(sol_tolerance)<1e6*sol_tolerance_min):
-            rt_min = rt
+
+        if(abs(sol_tolerance)<1e-5 and abs(l-rt)<rtdiff_min): #if(rt<rt_min and abs(sol_tolerance)<1e6*sol_tolerance_min):
+            rtdiff_min = abs(l-rt)
             ng_min = res[0]
             beta_min =res[1]
             d_min = res[2]
             logq_min = res[3]
             wg_min = wg
-            sol_tolerance_min = abs(sol_tolerance)
-            print(wg, sol_tolerance)
-
+            sol_tolerance_min = sol_tolerance
 
     #print(param[0],param[1], param[2], param[3], param[4], ": ", wg_min, logq_min, beta_min,ng_min, d_min)
+    print(f"Parameters: logq={param[0]}, h={param[1]}, beta={param[2]}, ng={param[3]}, d={param[4]}, Solved values: logq={logq_min:.5f} ng={ng_min:.5f}, beta={beta_min:.5f}, d={d_min:.5f}, sol_tol={sol_tolerance_min:.5f}")
     #print("------------------------------")
 
     return 0 #TODO: return logq
 
 #[logq, h, beta, ng, d, wg, lambda]
-n = 2**16
-for param in all_params16:
+n = 2**17
+for param in all_params17:
 
     if param[5]==0: continue
     wg = param[5]
@@ -284,12 +292,12 @@ for param in all_params16:
     eq1b = lambda ng_, beta_, d_:  l - approx_binom(ng_, wg)- wg - 2*log2(d_) + approx_binom(n-h,ng_-wg)+approx_binom(h,wg) - approx_binom(n, ng_) - 5
     # #eq1a = lambda ng_, beta_, d_: l - (0.292*beta_+16.4+3+log2(d_)) + log2(binomial(n-h,ng_-wg)*binomial(h,wg)/binomial(n, ng_)+binomial(n-h,ng_-wg+1)*binomial(h,wg-1)/binomial(n, ng_)) -2
     # #eq1b = lambda ng_, beta_, d_:  l - log2(RR(binomial(ng_, wg)+binomial(ng_, wg-1)))- wg - 2*log2(d_) + log2(binomial(n-h,ng_-wg)*binomial(h,wg)/binomial(n, ng_)+binomial(n-h,ng_-wg+1)*binomial(h,wg-1)/binomial(n, ng_)) - 5
-    eq2 = lambda ng_, beta_, d_, logq: d_ - ceil(sqrt(n * logq * ln2 / log(_delta_approx(beta_)))) + ng_ - 1 #adding ceil over sqrt() makes the eq. precise
-    eq3 = lambda ng_, beta_, d_, logq: (-d_-1)*log2(_delta(beta_))+ ((d_-n+ng_-1)*logq+ (n-ng_)*log2(xi))/d_ - 4
-    print(param[0],param[1], param[2], param[5], ": ", eq1a(param[3],param[2],param[4]), eq1b(param[3],param[2],param[4]), eq2(param[3],param[2],param[4], param[0]),eq3(param[3],param[2],param[4], param[0]), log(_delta_approx((param[2])))-log(_delta(param[2])))
+    eq2 = lambda ng_, beta_, d_, logq: d_ - sqrt(n * logq  /log_delta(beta_)) + ng_ - 1 #adding ceil over sqrt() makes the eq. precise
+    eq3 = lambda ng_, beta_, d_, logq: (-d_-1)*log_delta(beta_)+ ((d_-n+ng_-1)*logq+ (n-ng_)*log2(xi))/d_ - 4
+    #print(param[0],param[1], param[2], param[5], ": ", eq1a(param[3],param[2],param[4]), eq1b(param[3],param[2],param[4]), eq2(param[3],param[2],param[4], param[0]),eq3(param[3],param[2],param[4], param[0]))
 
-    #res = numerical_logq_hybrid(n, param[6], 3.19, param[1])
-    print("------------------------------")
+    res = numerical_logq_hybrid(n, param[6], 3.19, param[1])
+    #print("------------------------------")
 
 # EXACT and NON-EXACT EQUATIONS:
 #n=14: correcting constants: [-2, -5]
