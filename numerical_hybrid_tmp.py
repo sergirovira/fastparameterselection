@@ -1,7 +1,14 @@
 from sage.all import RR, binomial
 from numpy import pi, exp, log, log2, sqrt, multiply, divide, ceil
-from scipy.optimize import fsolve
-import scipy.special
+import scipy.special 
+from scipy.special import binom, comb
+
+import numpy as np
+import random
+
+from scipy.optimize import fsolve, least_squares, minimize, root, differential_evolution, basinhopping
+
+verbose = 1
 
 #[logq, h, beta, ng, d, wg, lambda]
 all_params14 = [[700, 64, 116, 2253, 28240, 4, 76.15782878506808], [750, 64, 106, 1920, 28924, 4, 72.00766336007604],
@@ -99,12 +106,10 @@ def _delta(beta):
     )
     return (beta / (2 * pi * e) * (pi * beta) ** (1 / beta)) ** (1 / (2 * (beta - 1)))
 
+
 def _delta_approx(beta):
     return (beta / (2 * pi * e))** (1 / (2 * (beta - 1)))
 
-# beta_test = 664
-# print(_delta((beta_test)), _delta_approx((beta_test)) )
-# assert(False)
 
 def entropy(x):
     return -x*log2(x) -(1-x)*log2(1-x)
@@ -133,20 +138,40 @@ def approx_startpoint(n, logq, h):
     d_optimal = sqrt(2 * n * lnq * beta_solution[0] / log(beta_solution[0] / const))
     return [beta_solution[0], d_optimal]
 
-def probability_enum(n, h, ng, w):
-    prob = 0
-    ng = int(ng)
-    for i in range(0,w):
-        prob+=RR(binomial(n-h,ng-i)*binomial(h,i)/binomial(n, ng))
-    return log2(prob)
+def probability_enum(n, h, ng, wg):
+    try:
+        if verbose: print(f"🔎 probability_enum inputs: n={n}, h={h}, ng={ng}, wg={wg}")
+
+        denom = comb(int(n), int(ng), exact=True)
+        if denom == 0:
+            if verbose: print("⚠️ ERROR: binomial(n, ng) is 0, returning -inf")
+            return -100  # Use a large negative number instead of -inf
+
+        prob = comb(int(n-h), int(ng-wg), exact=True) * comb(int(h), int(wg), exact=True) / denom
+        return log2(prob) if prob > 0 else -100
+    except Exception as e:
+        if verbose: print(f"❌ EXCEPTION in probability_enum: {e}")
+        return -100  # Prevent crash
+
 
 def ss_enum(ng, w):
-    ss = 0
-    for i in range(0,w):
-        ss+=RR(binomial(ng, i) * 2**i)
-    return log2(ss)
+    if not np.isnan(ng) and not np.isnan(wg):
+        ss = sum(comb(int(ng), int(i), exact=True) * 2**i for i in range(0, w))
+    else:
+        ss = float('-inf')
 
+    return log2(float(ss)) if ss > 0 else float('-inf')
 
+epsilon = 1e-10  
+
+def safe_log2(x):
+    return log2(max(epsilon, x))
+
+def approx_binom(n, k):
+    return 0.5 * (k * safe_log2(n/k) + k)
+
+def _delta(beta_):
+    return max(epsilon, beta_)
 
 def numerical_lambda_hybrid(n, logq, sigma_e, h):
     lnq = logq * ln2
@@ -194,22 +219,21 @@ def numerical_logq_hybrid(n, l, sigma_e, h):
     sol_tolerance_min = 10
 
     beta_initial_guess = (l - log2(8*4*n) -  16.4) / 0.292
-    logq_initial_guess = 800
+    logq_initial_guess = 700
     d_initial_guess = ceil(sqrt(n * logq_initial_guess * ln2 / log(_delta(beta_initial_guess))))
 
     for wg in range(2,30):
-        # EXACT EQUATIONS: ERROR: NotImplementedError: The Function binomial does not support numpy arrays as arguments
-        # eq1a = lambda ng_, beta_, d_: l - (0.292*beta_+16.4+3+log2(d_)) + probability_enum(n, h, ng_, wg)-2 # log2(binomial(n-h,ng_-wg)*binomial(h,wg)/binomial(n, ng_) + binomial(n-h,ng_-wg+1)*binomial(h,wg-1)/binomial(n, ng_)) #approx_binom(n-h, ng_-wg)+approx_binom(h, wg)-approx_binom(n, ng_) - 2   #log2(binomial(n-h,ng_-wg)*binomial(h,wg)/binomial(n, ng_) + binomial(n-h,ng_-wg+1)*binomial(h,wg-1)/binomial(n, ng_)) #(approx_binom(ng_,wg)+wg)+log2(d_) - (0.292*beta_+16.4+3)+2  #0.5*(ng_*entropy(wg/ng_)+wg) #- 0.5*log2(8*n*wg/ng_*(1-wg/ng_)) #0.5*(log2(math.comb(ng_, wg),2)+wg)
-        # eq1b = lambda ng_, beta_, d_:  l - ss_enum(ng_,wg)-2*log2(d_) + probability_enum(n, h, ng_, wg)-5 #approx_binom(n-h, ng_-wg)+approx_binom(h, wg)-approx_binom(n, ng_)
-        # eq2 = lambda ng_, beta_, d_, logq: d_ - ceil(sqrt(n * logq * ln2 / log(_delta(beta_)))) + ng_ - 1 #adding ceil over sqrt() makes the eq. precise
-        # eq3 = lambda ng_, beta_, d_, logq: (-d_-1)*log2(_delta(beta_))+ ((d_-n+ng_-1)*logq+ (n-ng_)*log2(xi))/d_ - 4 #success proba
-
-        #NON-EXACT EQUATIONS: ERROR: NotImplementedError: The Function binomial does not support numpy arrays as arguments
-        # eq1a = lambda ng_, beta_, d_: l - (0.292*beta_+16.4+3+log2(d_)) + log2(binomial(n-h,ng_-wg)*binomial(h,wg)/binomial(n, ng_)) -2
-        # eq1b = lambda ng_, beta_, d_:  l - log2(RR(binomial(ng_, wg-1)))- wg+1 - 2*log2(d_) + log2(binomial(n-h,ng_-wg+1)*binomial(h,wg-1)/binomial(n, ng_)) - 4
-        # eq2 = lambda ng_, beta_, d_, logq: d_ - ceil(sqrt(n * logq * ln2 / log(_delta(beta_)))) + ng_ - 1 #adding ceil over sqrt() makes the eq. precise
-        # eq3 = lambda ng_, beta_, d_, logq: (-d_-1)*log2(_delta(beta_))+ ((d_-n+ng_-1)*logq+ (n-ng_)*log2(xi))/d_ - 4
-
+        # EXACT EQUATIONS:
+        # eq1a = lambda ng_, beta_, d_: l - (0.292*beta_+16.4+3+safe_log2(d_)) + probability_enum(n, h, ng_, wg)-2
+        # eq1b = lambda ng_, beta_, d_: l - ss_enum(ng_,wg)-2*safe_log2(d_) + probability_enum(n, h, ng_, wg)-5
+        # eq2 = lambda ng_, beta_, d_, logq: d_ - ceil(sqrt(n * logq * ln2 / log(_delta(beta_)))) + ng_ - 1
+        # eq3 = lambda ng_, beta_, d_, logq: (-d_ - 1) * safe_log2(_delta(beta_)) + ((d_ - n + ng_ - 1) * logq + (n - ng_) * safe_log2(xi)) / d_ - 4
+        #
+        #NON-EXACT EQUATIONS: 
+        #eq1a = lambda ng_, beta_, d_: l - (0.292 * beta_ + 16.4 + 3 + safe_log2(d_)) + safe_log2(binom(n - h, ng_ - wg) * binom(h, wg) / max(epsilon, binom(n, ng_))) - 2
+        #eq1b = lambda ng_, beta_, d_: l - safe_log2(binom(ng_, wg - 1)) - wg + 1 - 2 * safe_log2(d_) + safe_log2(binom(n - h, ng_ - wg + 1) * binom(h, wg - 1) / max(epsilon, binom(n, ng_))) - 4
+        #eq2 = lambda ng_, beta_, d_, logq: d_ - ceil(sqrt(n * logq * ln2 / log(_delta(beta_)))) + ng_ - 1
+        #eq3 = lambda ng_, beta_, d_, logq: (-d_ - 1) * safe_log2(_delta(beta_)) + ((d_ - n + ng_ - 1) * logq + (n - ng_) * safe_log2(xi)) / d_ - 4
 
         #EVEN MORE NON-EXACT EQUATIONS:
         eq1a = lambda ng_, beta_, d_: l - (0.292*beta_+16.4+3+log2(d_)) + approx_binom(n-h,ng_-wg)+approx_binom(h,wg) - approx_binom(n, ng_) -2
@@ -224,12 +248,27 @@ def numerical_logq_hybrid(n, l, sigma_e, h):
             f3 = eq3(x[0], x[1], x[2], x[3])
             return f1a, f1b, f2, f3
 
-        #print('approx start:', approx_startpoint(n,param[0], param[1]))
-        #initial_guess = approx_startpoint(n,logq, h)
-        res = fsolve(system, [n/16, param[3], param[4], logq_initial_guess], maxfev = 2**21, full_output=False)
+        ##[logq, h, beta, ng, d, wg, lambda]
+        #res = fsolve(system, [n/16, param[3], param[4], logq_initial_guess], maxfev = 2**21, full_output=False)
+        initial_guess = [param[3]-10, param[2]-5, param[4]+20, logq_initial_guess]
+        bounds = ([n/10, n/200, n, 500], [n/2, n/100, 4*n, 1500])
+        print(initial_guess)
+        # print(bounds)
+        # assert (False)
+        #Determines the relative step size for the finite difference approximation of the Jacobian. The actual step is computed as x * diff_step.
+        step_size = [5,2,10,20]
+        res = least_squares(lambda x: system(x), initial_guess, diff_step=step_size, bounds=bounds, max_nfev=2**21).x
+        #res = root(system, [param[3], param[2], param[4], logq_initial_guess], method='hybr').x
+        #res = basinhopping(lambda x: sum(abs(y) for y in system(x)), [param[3], param[2], param[4], logq_initial_guess]).x
+
+
         rt = 0.292*res[1]+log2(8*res[2])+16.4 - probability_enum(n, h, res[0], wg)
         sol_tolerance = eq1a(res[0], res[1], res[2])+eq1b(res[0], res[1], res[2])+eq2(res[0], res[1], res[2], res[3])+eq3(res[0], res[1], res[2], res[3])
-        #print(wg, eq1a(res[0], res[1], res[2]),eq1b(res[0], res[1], res[2]), eq2(res[0], res[1], res[2], res[3]), eq3(res[0], res[1], res[2], res[3]), rt, sol_tolerance)
+        print(f"wg: {wg} | rt: {rt:.5f} | tol: {sol_tolerance:.5f} | "
+                          f"Eq1a: {eq1a(res[0], res[1], res[2]):.5f} | Eq1b: {eq1b(res[0], res[1], res[2]):.5f} | "
+                          f"Eq2: {eq2(res[0], res[1], res[2], res[3]):.5f} | Eq3: {eq3(res[0], res[1], res[2], res[3]):.5f}")
+        print(f"Solved values: ng={res[0]:.5f}, beta={res[1]:.5f}, d={res[2]:.5f}, logq={res[3]:.5f}")
+
 
         if(abs(sol_tolerance)<1e-5 and rt<rt_min): #if(rt<rt_min and abs(sol_tolerance)<1e6*sol_tolerance_min):
             rt_min = rt
@@ -242,10 +281,11 @@ def numerical_logq_hybrid(n, l, sigma_e, h):
             print(wg, sol_tolerance)
 
 
-    #print(param[0],param[1], param[2], param[3], param[4], ": ", wg_min, logq_min, beta_min,ng_min, d_min)
+    print(param[0], param[1], param[2], param[3], param[4], ": ", wg_min, logq_min, beta_min,ng_min, d_min)
     #print("------------------------------")
 
-    return 0 #TODO: return logq
+    return logq_min
+
 
 #[logq, h, beta, ng, d, wg, lambda]
 n = 2**16
@@ -258,38 +298,12 @@ for param in all_params16:
     sigma_e = 3.19
     sigma_s = sqrt(h/n)
     xi = sigma_e/ sigma_s
-    #res = numerical_lambda_hybrid(n, param[0], 3.19, param[1])
 
-    # EXACT EQUATIONS:
-    # eq1a = lambda ng_, beta_, d_: l - (0.292*beta_+16.4+3+log2(d_)) + probability_enum(n, h, ng_, wg)-2 # log2(binomial(n-h,ng_-wg)*binomial(h,wg)/binomial(n, ng_) + binomial(n-h,ng_-wg+1)*binomial(h,wg-1)/binomial(n, ng_)) #approx_binom(n-h, ng_-wg)+approx_binom(h, wg)-approx_binom(n, ng_) - 2   #log2(binomial(n-h,ng_-wg)*binomial(h,wg)/binomial(n, ng_) + binomial(n-h,ng_-wg+1)*binomial(h,wg-1)/binomial(n, ng_)) #(approx_binom(ng_,wg)+wg)+log2(d_) - (0.292*beta_+16.4+3)+2  #0.5*(ng_*entropy(wg/ng_)+wg) #- 0.5*log2(8*n*wg/ng_*(1-wg/ng_)) #0.5*(log2(math.comb(ng_, wg),2)+wg)
-    # eq1b = lambda ng_, beta_, d_:  l - ss_enum(ng_,wg)-2*log2(d_) + probability_enum(n, h, ng_, wg)-5 #approx_binom(n-h, ng_-wg)+approx_binom(h, wg)-approx_binom(n, ng_)
-    # eq2 = lambda ng_, beta_, d_, logq: d_ - ceil(sqrt(n * logq * ln2 / log(_delta(beta_)))) + ng_ - 1 #adding ceil over sqrt() makes the eq. precise
-    # eq3 = lambda ng_, beta_, d_, logq: (-d_-1)*log2(_delta(beta_))+ ((d_-n+ng_-1)*logq+ (n-ng_)*log2(xi))/d_ - 4 #success probability of Babai=1, i.e. ||b_d*|| = sigma_e \approx 4
-    # print(param[0],param[1], param[2], param[5], ": ", eq1a(param[3],param[2],param[4]), eq1b(param[3],param[2],param[4]), eq2(param[3],param[2],param[4], param[0]),eq3(param[3],param[2],param[4], param[0]))
-    #----------------------
-
-    #NON-EXACT EQUATIONS:
-    # wg -= 1
-    # eq1a = lambda ng_, beta_, d_: l - (0.292*beta_+16.4+3+log2(d_)) + log2(binomial(n-h,ng_-wg)*binomial(h,wg)/binomial(n, ng_)) -2
-    # eq1b = lambda ng_, beta_, d_:  l - log2(RR(binomial(ng_, wg)))- wg - 2*log2(d_) + log2(binomial(n-h,ng_-wg)*binomial(h,wg)/binomial(n, ng_)) - 5
-    # #eq1a = lambda ng_, beta_, d_: l - (0.292*beta_+16.4+3+log2(d_)) + log2(binomial(n-h,ng_-wg)*binomial(h,wg)/binomial(n, ng_)+binomial(n-h,ng_-wg+1)*binomial(h,wg-1)/binomial(n, ng_)) -2
-    # #eq1b = lambda ng_, beta_, d_:  l - log2(RR(binomial(ng_, wg)+binomial(ng_, wg-1)))- wg - 2*log2(d_) + log2(binomial(n-h,ng_-wg)*binomial(h,wg)/binomial(n, ng_)+binomial(n-h,ng_-wg+1)*binomial(h,wg-1)/binomial(n, ng_)) - 5
-    # eq2 = lambda ng_, beta_, d_, logq: d_ - ceil(sqrt(n * logq * ln2 / log(_delta(beta_)))) + ng_ - 1 #adding ceil over sqrt() makes the eq. precise
-    # eq3 = lambda ng_, beta_, d_, logq: (-d_-1)*log2(_delta(beta_))+ ((d_-n+ng_-1)*logq+ (n-ng_)*log2(xi))/d_ - 4
-    # print(param[0],param[1], param[2], param[5], ": ", eq1a(param[3],param[2],param[4]), eq1b(param[3],param[2],param[4]), eq2(param[3],param[2],param[4], param[0]),eq3(param[3],param[2],param[4], param[0]))
-
-    #EVEN MORE NON-EXACT EQUATIONS:
-    wg -= 1
-    eq1a = lambda ng_, beta_, d_: l - (0.292*beta_+16.4+3+log2(d_)) + approx_binom(n-h,ng_-wg)+approx_binom(h,wg) - approx_binom(n, ng_) -2
-    eq1b = lambda ng_, beta_, d_:  l - approx_binom(ng_, wg)- wg - 2*log2(d_) + approx_binom(n-h,ng_-wg)+approx_binom(h,wg) - approx_binom(n, ng_) - 5
-    # #eq1a = lambda ng_, beta_, d_: l - (0.292*beta_+16.4+3+log2(d_)) + log2(binomial(n-h,ng_-wg)*binomial(h,wg)/binomial(n, ng_)+binomial(n-h,ng_-wg+1)*binomial(h,wg-1)/binomial(n, ng_)) -2
-    # #eq1b = lambda ng_, beta_, d_:  l - log2(RR(binomial(ng_, wg)+binomial(ng_, wg-1)))- wg - 2*log2(d_) + log2(binomial(n-h,ng_-wg)*binomial(h,wg)/binomial(n, ng_)+binomial(n-h,ng_-wg+1)*binomial(h,wg-1)/binomial(n, ng_)) - 5
-    eq2 = lambda ng_, beta_, d_, logq: d_ - ceil(sqrt(n * logq * ln2 / log(_delta_approx(beta_)))) + ng_ - 1 #adding ceil over sqrt() makes the eq. precise
-    eq3 = lambda ng_, beta_, d_, logq: (-d_-1)*log2(_delta(beta_))+ ((d_-n+ng_-1)*logq+ (n-ng_)*log2(xi))/d_ - 4
-    print(param[0],param[1], param[2], param[5], ": ", eq1a(param[3],param[2],param[4]), eq1b(param[3],param[2],param[4]), eq2(param[3],param[2],param[4], param[0]),eq3(param[3],param[2],param[4], param[0]), log(_delta_approx((param[2])))-log(_delta(param[2])))
-
-    #res = numerical_logq_hybrid(n, param[6], 3.19, param[1])
+    print(param)
+    res = numerical_logq_hybrid(n, param[6], 3.19, param[1])
     print("------------------------------")
+    print(n, param[6], param[1], wg)
+
 
 # EXACT and NON-EXACT EQUATIONS:
 #n=14: correcting constants: [-2, -5]
