@@ -3,7 +3,7 @@ import sys, getopt
 
 from formula_params import *
 from formulas import *
-from aux import *
+from aux_functions import *
 from numerical_solver import *
 
 sys.path.append('./lattice-estimator')
