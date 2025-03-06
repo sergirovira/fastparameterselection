@@ -33,6 +33,12 @@ Please download the Estimator if you want to use such functionality.
 Note: At present, the Estimator is also needed to run one of the formulas, this will be fixed shortly. 
 
 [Numpy](https://numpy.org/) is required.
+[SciPy](https://scipy.org/) is required. 
+
+You can run the following command to install:
+````
+pip install -r requirements.txt
+````
 
 Use with Docker
 -------
