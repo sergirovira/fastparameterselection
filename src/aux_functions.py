@@ -106,6 +106,14 @@ def helper():
     print('You can add  --verify 1 to any of the above commands to check the results against the Lattice Estimator')
     sys.exit()
 
+
+def helper_fit():
+    print('python3 fit_formula.py --param "lambda" --attack "usvp" --dist "binary" --simpl 0')
+    print('python3 fit_formula.py --param "lambda" --attack "bdd" --dist "ternary" --simpl 1')
+    print('python3 fit_formula.py --param "n" --attack "usvp" --dist "binary" --simpl 0')
+    print('python3 fit_formula.py --param "n" --attack "bdd" --dist "ternary" --simpl 1')
+    sys.exit()
+
 paper = 'https://eprint.iacr.org/2024/1001'
 
 def create_explanation_dict(headers):

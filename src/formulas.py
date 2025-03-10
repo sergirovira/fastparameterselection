@@ -121,7 +121,7 @@ def predicted_beta_usvp(d, lnq, sig, chi):
 
 # Main functions
 
-# Eq. (14)
+# Eq. (15)
 def model_lambda_usvp(d, logq, std_s, std_e, params):
     
     sig = std_e
@@ -135,13 +135,14 @@ def model_lambda_usvp(d, logq, std_s, std_e, params):
 
     return np.multiply(params[0], beta) + np.multiply(params[1], np.log(m2)) + params[2]
 
-# Eq. (16)
+# Eq. (17)
 def model_lambda_usvp_s(d, logq, params):
     lnq = np.multiply(logq, ln2)
 
     return np.multiply(np.multiply(params[0], np.divide(d, lnq)), 
                        np.log(np.divide(params[1] * d, lnq))) + np.multiply(params[2], np.log(d)) + params[3]
 
+# Eq. (18)
 # Eq. (18)
 def model_lambda_bdd(d, logq, std_s, std_e, std_s_num, params):
     sig = std_e 
@@ -154,7 +155,9 @@ def model_lambda_bdd(d, logq, std_s, std_e, std_s_num, params):
     if isinstance(logq, list):
         for lq in logq:
             beta.append(predicted_beta_bdd(d, 2 ** lq, std_e, std_e/std_s))
+            beta.append(predicted_beta_bdd(d, 2 ** lq, std_e, std_e/std_s))
     else:
+        beta.append(predicted_beta_bdd(d, 2 ** logq, std_e, std_e/std_s))
         beta.append(predicted_beta_bdd(d, 2 ** logq, std_e, std_e/std_s))
 
     # Intermediate calculations
@@ -167,6 +170,7 @@ def model_lambda_bdd(d, logq, std_s, std_e, std_s_num, params):
 
 # Eq. (21)
 def model_lambda_bdd_s(d, logq, params):
+
     lnq = np.multiply(logq, ln2)
 
     return np.multiply(np.divide(params[0] * d, lnq), 
@@ -214,6 +218,7 @@ def model_n_bdd(l, logq, std_s, std_e, params):
     nom = (params[0] * B + params[1])*(A + C + params[2])**2
     #print(nom.n()/denom.n())
     return A*nom/denom
+    return A*nom/denom
 
 # Eq. (25)
 def model_n_bdd_s(l, logq, std_s, std_e, params):
@@ -228,3 +233,6 @@ def model_n_bdd_s(l, logq, std_s, std_e, params):
     term1 = params[0] * l + params[1] * np.log(l)
     term2 = params[2] * np.divide(lnq ,np.log(l)) + params[3] * np.divide(np.log(l),lnq)
     return np.multiply(term1,term2)
+
+
+

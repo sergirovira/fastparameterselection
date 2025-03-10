@@ -98,6 +98,23 @@ def main(argv):
         n_bdd_s = n_bdd_s_ter
 
 
+   
+    # std_e_values = np.linspace(0.1, 500, 100)  # Adjust the range as needed
+
+    # print(std_e_values)
+
+    # eq_values = np.array([numerical_std_e_bdd_plot(l, lwe_d, logq, std_s, std_e) for std_e in std_e_values])
+
+    # # Plotting the function
+    # plt.figure(figsize=(10, 6))
+    # plt.plot(std_e_values, eq_values, label=r'$eq(\sigma_e)$')
+    # #plt.axhline(0, color='red', linestyle='--', label='y=0 (Root)')
+    # plt.xlabel(r'$\sigma_e$')
+    # plt.ylabel(r'$eq(\sigma_e)$')
+    # plt.title('Plot of the equation function $eq(\sigma_e)$')
+    # plt.legend()
+    # plt.grid(True)
+    # plt.show()
 
     # If we select to run the formulas for the LWE dimension, we get an output of the following form:
     #
@@ -126,7 +143,7 @@ def main(argv):
                 secret = entry['secret']
                 l = int(entry['lambda'])
                 logq = int(entry['logq'])
-                est_usvp = int(math.ceil(model_n_usvp(l, logq, n_usvp_s)))
+                est_usvp = int(math.ceil(model_n_usvp(l, logq, std_s, std_e, n_usvp_s)))
                 est_bdd = int(math.ceil(model_n_bdd(l, logq, std_s, std_e, n_bdd_s)))
                 est_usvp_pow = closest_power_of_2(est_usvp)
                 est_bdd_pow = closest_power_of_2(est_bdd)
@@ -139,7 +156,7 @@ def main(argv):
                 output_dict['n'] = min(est_usvp, est_usvp_pow, est_bdd, est_bdd_pow)  #take min for a more conservative overstretchness estimation
         else:
             for lq in logq:
-                est_usvp = int(math.ceil(model_n_usvp(l, lq, n_usvp_s)))
+                est_usvp = int(math.ceil(model_n_usvp(l, lq, std_s, std_e, n_usvp_s)))
                 est_bdd = int(math.ceil(model_n_bdd(l, lq,  std_s, std_e, n_bdd_s))) #n_bdd_s is just a placeholder here
                 est_bdd_s = int(math.ceil(model_n_bdd_s(l, lq,  std_s, std_e, n_bdd_s)))
                 est_usvp_pow = closest_power_of_2(est_usvp)
@@ -174,8 +191,8 @@ def main(argv):
                 secret = entry['secret']
                 l = int(entry['lambda'])
                 logq = int(entry['logq'])
-                est_usvp = int(math.ceil(model_n_usvp(l, logq, n_usvp_s_bin)))
-                est_bdd = int(math.ceil(model_n_bdd(l, logq, secret, n_bdd_s_bin)))
+                est_usvp = int(math.ceil(model_n_usvp(l, logq, std_s, std_e, n_usvp_s_bin)))
+                est_bdd = int(math.ceil(model_n_bdd(l, logq, std_s, std_e, n_bdd_s_bin)))
                 est_usvp_pow = closest_power_of_2(est_usvp)
                 est_bdd_pow = closest_power_of_2(est_bdd)
                 if(verify and estimator_installed):
@@ -212,8 +229,8 @@ def main(argv):
                 secret = entry['secret']
                 l = int(entry['lambda'])
                 logq = int(entry['logq'])
-                est_usvp = int(math.ceil(model_n_usvp(l, logq, n_usvp_s_bin)))
-                est_bdd = int(math.ceil(model_n_bdd(l, logq, secret, n_bdd_s_bin)))
+                est_usvp = int(math.ceil(model_n_usvp(l, logq, std_s, std_e, n_usvp_s_bin)))
+                est_bdd = int(math.ceil(model_n_bdd(l, logq, std_s, std_e, n_bdd_s_bin)))
                 est_usvp_pow = closest_power_of_2(est_usvp)
                 est_bdd_pow = closest_power_of_2(est_bdd)
                 if(verify and estimator_installed):
@@ -266,7 +283,7 @@ def main(argv):
                 secret = entry['secret']
                 lwe_d = int(entry['lwe_d'])
                 logq = int(entry['logq'])
-                est_usvp = int(round(model_lambda_usvp(lwe_d, logq, secret, lambda_usvp_bin)))
+                est_usvp = int(round(model_lambda_usvp(lwe_d, logq, std_s, std_e, lambda_usvp_bin)))
                 est_usvp_s = int(round(model_lambda_usvp_s(lwe_d, logq, lambda_usvp_s_bin)))
                 est_bdd = 0
                 try: 

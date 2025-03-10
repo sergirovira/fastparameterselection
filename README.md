@@ -5,7 +5,7 @@ In this repository, we offer a tool to select secure parameters for LWE-based ap
 
 Our tool is constructed by studying the uSVP and BDD attacks against LWE. From this study, we derive formulas which describe each of the aforementioned parameters as a function of the others. You can find all the details in this paper [A Tool for Fast and Secure LWE Parameter Selection: the FHE case](https://eprint.iacr.org/2024/1895). Section 6 of the paper comprehensively explains the tool's usage, which complements this readme.  
 
-Usage
+Usage (Parameter estimation)
 -----
 Find an estimation of the security level by running:
    ````
@@ -26,6 +26,26 @@ python3 src/estimate.py --param "std_e" --lambda "80" --n "1024" --logq "20" --s
 
 Note: you can add the option ````--verify 1```` to any of the commands to compare the output of the formulas against the Lattice Estimator (see Dependencies).
 
+Usage (Fitting function)
+-----
+We include the file fit_formula.py which computes the best coefficients to fit our formulas with the output of the lattice estimator. 
+To use it, you do the following:
+
+   ````
+   python3 fit_formula.py --param A --attack B --dist C --simpl D
+   ````
+where
+
+A is in {'lambda','n'}, B is in {'bdd', 'usvp'}, C is in {'binary', 'ternary'} and D is in {0,1}.
+
+For example, 
+
+   ````
+   python3 fit_formula.py --param 'n' --attack 'usvp' --dist 'ternary' --simpl 0
+   ````
+will find the best parameters for the LWE dimension n, considering the usvp attack, ternary distribution and the formula containing beta. If we set --simpl 1
+we consider the formula where the dependency on beta has been removed. 
+
 Dependencies
 ---------
 We have added the functionality to compare the output of our formulas against the [Lattice Estimator](https://github.com/malb/lattice-estimator). 
@@ -33,6 +53,12 @@ Please download the Estimator if you want to use such functionality.
 Note: At present, the Estimator is also needed to run one of the formulas, this will be fixed shortly. 
 
 [Numpy](https://numpy.org/) is required.
+[SciPy](https://scipy.org/) is required. 
+
+You can run the following command to install:
+````
+pip install -r requirements.txt
+````
 
 Use with Docker
 -------
