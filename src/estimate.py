@@ -3,10 +3,10 @@ import sys, getopt
 
 from formula_params import *
 from formulas import *
-from aux import *
+from aux_functions import *
 from numerical_solver import *
 
-sys.path.append('../lattice-estimator')
+sys.path.append('./lattice-estimator')
 estimator_installed = 1
 
 try:
@@ -203,8 +203,8 @@ def main(argv):
                 data.append(data_point)
                 output_dict['logq'] = max(est_usvp, est_bdd, est_usvp_pow, est_bdd_pow)
         else:
-                est_usvp_numerical = int(math.ceil(numerical_logq_usvp(l, lwe_d, std_s, std_e)))
-                est_bdd_numerical = int(math.ceil(numerical_logq_bdd(l, lwe_d, std_s, std_e)))
+                est_usvp_numerical = int(math.floor(numerical_logq_usvp(l, lwe_d, std_s, std_e)))
+                est_bdd_numerical = int(math.floor(numerical_logq_bdd(l, lwe_d, std_s, std_e)))
 
                 if(verify and estimator_installed):
                     lwe_parameters_bdd = LWE.Parameters(lwe_d, 2 ** est_bdd_numerical, ND.UniformMod(secret_q), ND.DiscreteGaussian(std_e))
@@ -320,6 +320,11 @@ def main(argv):
                 data.append(data_point)
                 #output_dict['lambda'] = min(est_usvp, est_usvp_s, est_bdd, est_bdd_s)
 
+    elif param == "est":
+        for lq in logq:
+            parameters = LWE.Parameters(lwe_d, 2 ** lq, ND.UniformMod(secret_q), ND.DiscreteGaussian(std_e))
+            LWE.estimate(parameters)
+
     else: helper()
 
     print_table(headers,data)
@@ -329,12 +334,6 @@ def main(argv):
         beta_ =  check_overstreched(output_dict)
         if (beta_>0 and output_dict['lambda']>0 and (output_dict['lambda']-0.292*beta_)>20):
             print("Warning: the ntru parameters are in the overstretched regime")
-
-    
-    if param == "est":
-        for lq in logq:
-            parameters = LWE.Parameters(lwe_d, 2 ** lq, ND.UniformMod(secret_q), ND.DiscreteGaussian(std_e))
-            LWE.estimate(parameters)
 
     
     print("\n")

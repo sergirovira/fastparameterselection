@@ -1,0 +1,11 @@
+services:
+  python-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ../src:/app/src
+      - ../examples:/app/examples
+      - ../lattice-estimator:/app/lattice-estimator
+    working_dir: /app
+    command: [ "sage", "--python3", "src/estimate.py", "--param", "lambda",  "--n", "1024", "--logq", "35", "--secret", "binary", "--error", "3.19"]
