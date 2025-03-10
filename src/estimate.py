@@ -322,8 +322,6 @@ def main(argv):
     print("\n")
     if(verify and not estimator_installed): 
         print("Warning: Verification not possible, Lattice Estimator not installed")
-    if(param == "lambda" and not estimator_installed):
-        print("Warning: Bdd set to 0")
     print("\n")
 
 if __name__ == "__main__":
